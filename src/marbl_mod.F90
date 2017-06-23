@@ -118,15 +118,6 @@ module marbl_mod
   use marbl_parms, only : CaCO3_sp_thres
   use marbl_parms, only : CaCO3_temp_thres1
   use marbl_parms, only : CaCO3_temp_thres2
-  use marbl_parms, only : DOC_reminR_light
-  use marbl_parms, only : DON_reminR_light
-  use marbl_parms, only : DOP_reminR_light
-  use marbl_parms, only : DOC_reminR_dark
-  use marbl_parms, only : DON_reminR_dark
-  use marbl_parms, only : DOP_reminR_dark
-  use marbl_parms, only : DOCr_reminR0
-  use marbl_parms, only : DONr_reminR0
-  use marbl_parms, only : DOPr_reminR0
   use marbl_parms, only : DOCprod_refract
   use marbl_parms, only : DONprod_refract
   use marbl_parms, only : DOPprod_refract
@@ -2247,6 +2238,7 @@ contains
 
     !  Compute surface forcing fluxes
 
+    use marbl_diagnostics_mod    , only : marbl_surface_forcing_diag_ind
     use marbl_interface_types    , only : sfo_ind
     use marbl_internal_types     , only : marbl_surface_saved_state_indexing_type
     use marbl_schmidt_number_mod , only : schmidt_co2_surf
@@ -2286,17 +2278,24 @@ contains
     !-----------------------------------------------------------------------
     character(len=*), parameter :: subname = 'marbl_mod:marbl_set_surface_forcing'
 
-    integer (int_kind) :: n                        ! loop indices
-    integer (int_kind) :: auto_ind                 ! autotroph functional group index
-    real (r8)          :: phlo(num_elements)       ! lower bound for ph in solver
-    real (r8)          :: phhi(num_elements)       ! upper bound for ph in solver
-    real (r8)          :: ph_new(num_elements)     ! computed ph from solver
-    real (r8)          :: xkw_ice(num_elements)    ! common portion of piston vel., (1-fice)*xkw (cm/s)
-    real (r8)          :: o2sat_1atm(num_elements) ! o2 saturation @ 1 atm (mmol/m^3)
-    real (r8)          :: totalChl_loc(num_elements)  ! local value of totalChl
-    real (r8)          :: flux_o2_loc(num_elements)   ! local value of o2 flux
-    type(co2calc_coeffs_type), dimension(num_elements) :: co2calc_coeffs
-    type(co2calc_state_type),  dimension(num_elements) :: co2calc_state
+    integer (int_kind) :: n                              ! loop indices
+    integer (int_kind) :: auto_ind                       ! autotroph functional group index
+    real (r8)          :: phlo(num_elements)             ! lower bound for ph in solver
+    real (r8)          :: phhi(num_elements)             ! upper bound for ph in solver
+    real (r8)          :: ph_new(num_elements)           ! computed ph from solver
+    real (r8)          :: xkw_ice(num_elements)          ! common portion of piston vel., (1-fice)*xkw (cm/s)
+    real (r8)          :: o2sat_1atm(num_elements)       ! o2 saturation @ 1 atm (mmol/m^3)
+    real (r8)          :: totalChl_loc(num_elements)     ! local value of totalChl
+    real (r8)          :: flux_o2_loc(num_elements)      ! local value of o2 flux
+    real (r8)          :: co3_tmp(num_elements)          ! temporary, for computing sflux derivatives
+    real (r8)          :: co2star_tmp(num_elements)      ! temporary, for computing sflux derivatives
+    real (r8)          :: dco2star_pos_inc(num_elements) ! temporary, for computing sflux derivatives
+    real (r8)          :: dco2star_neg_inc(num_elements) ! temporary, for computing sflux derivatives
+    real (r8)          :: pco2surf_tmp(num_elements)     ! temporary, for computing sflux derivatives
+    real (r8)          :: dpco2_tmp(num_elements)        ! temporary, for computing sflux derivatives
+    real (r8)          :: ph_tmp(num_elements)           ! temporary, for computing sflux derivatives
+    type(co2calc_coeffs_type) :: co2calc_coeffs(num_elements)
+    type(co2calc_state_type)  :: co2calc_state(num_elements)
     !-----------------------------------------------------------------------
 
     associate(                                                                                      &
@@ -2316,6 +2315,8 @@ contains
 
          piston_velocity      => surface_forcing_internal%piston_velocity(:),                       &
          flux_co2             => surface_forcing_internal%flux_co2(:),                              &
+         d_flux_co2_d_dic     => surface_forcing_internal%d_flux_co2_d_dic(:),                      &
+         d_flux_co2_d_alk     => surface_forcing_internal%d_flux_co2_d_alk(:),                      &
          co2star              => surface_forcing_internal%co2star(:),                               &
          dco2star             => surface_forcing_internal%dco2star(:),                              &
          pco2surf             => surface_forcing_internal%pco2surf(:),                              &
@@ -2449,6 +2450,8 @@ contains
                temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
                salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
                atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+               phlo       = phlo,                                          &
+               phhi       = phhi,                                          &
                co2calc_coeffs = co2calc_coeffs,                            &
                co2calc_state = co2calc_state,                              &
                co3        = co3,                                           &
@@ -2456,8 +2459,6 @@ contains
                dco2star   = dco2star,                                      &
                pco2surf   = pco2surf,                                      &
                dpco2      = dpco2,                                         &
-               phlo       = phlo,                                          &
-               phhi       = phhi,                                          &
                ph         = ph_prev_surf,                                  &
                marbl_status_log = marbl_status_log)
 
@@ -2469,6 +2470,130 @@ contains
           flux_co2(:) = pv_co2(:) * dco2star(:)
           if (sfo_ind%flux_co2_id.ne.0) then
             surface_forcing_output%sfo(sfo_ind%flux_co2_id)%forcing_field = flux_co2
+          end if
+
+          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_DIC_GAS_FLUX_d_DIC)%compute_now) then
+             ! centered finite difference approximation
+
+             call marbl_co2calc_surf(                                         &
+                  num_elements     = num_elements,                            &
+                  lcomp_co2calc_coeffs = .false.,                             &
+                  dic_in     = surface_vals(:,dic_ind) + 0.5_r8,              &
+                  xco2_in    = surface_input_forcings(ind%xco2_id)%field_0d,  &
+                  ta_in      = surface_vals(:,alk_ind),                       &
+                  pt_in      = surface_vals(:,po4_ind),                       &
+                  sit_in     = surface_vals(:,sio3_ind),                      &
+                  temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
+                  salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
+                  atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  phlo       = phlo,                                          &
+                  phhi       = phhi,                                          &
+                  co2calc_coeffs = co2calc_coeffs,                            &
+                  co2calc_state = co2calc_state,                              &
+                  co3        = co3_tmp,                                       &
+                  co2star    = co2star_tmp,                                   &
+                  dco2star   = dco2star_pos_inc,                              &
+                  pco2surf   = pco2surf_tmp,                                  &
+                  dpco2      = dpco2_tmp,                                     &
+                  ph         = ph_tmp,                                        &
+                  marbl_status_log = marbl_status_log)
+
+             if (marbl_status_log%labort_marbl) then
+                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+                return
+             end if
+
+             call marbl_co2calc_surf(                                         &
+                  num_elements     = num_elements,                            &
+                  lcomp_co2calc_coeffs = .false.,                             &
+                  dic_in     = surface_vals(:,dic_ind) - 0.5_r8,              &
+                  xco2_in    = surface_input_forcings(ind%xco2_id)%field_0d,  &
+                  ta_in      = surface_vals(:,alk_ind),                       &
+                  pt_in      = surface_vals(:,po4_ind),                       &
+                  sit_in     = surface_vals(:,sio3_ind),                      &
+                  temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
+                  salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
+                  atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  phlo       = phlo,                                          &
+                  phhi       = phhi,                                          &
+                  co2calc_coeffs = co2calc_coeffs,                            &
+                  co2calc_state = co2calc_state,                              &
+                  co3        = co3_tmp,                                       &
+                  co2star    = co2star_tmp,                                   &
+                  dco2star   = dco2star_neg_inc,                              &
+                  pco2surf   = pco2surf_tmp,                                  &
+                  dpco2      = dpco2_tmp,                                     &
+                  ph         = ph_tmp,                                        &
+                  marbl_status_log = marbl_status_log)
+
+             if (marbl_status_log%labort_marbl) then
+                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+                return
+             end if
+
+             d_flux_co2_d_dic(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
+          end if
+
+          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_DIC_GAS_FLUX_d_ALK)%compute_now) then
+             ! centered finite difference approximation
+
+             call marbl_co2calc_surf(                                         &
+                  num_elements     = num_elements,                            &
+                  lcomp_co2calc_coeffs = .false.,                             &
+                  dic_in     = surface_vals(:,dic_ind),                       &
+                  xco2_in    = surface_input_forcings(ind%xco2_id)%field_0d,  &
+                  ta_in      = surface_vals(:,alk_ind) + 0.5_r8,              &
+                  pt_in      = surface_vals(:,po4_ind),                       &
+                  sit_in     = surface_vals(:,sio3_ind),                      &
+                  temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
+                  salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
+                  atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  phlo       = phlo,                                          &
+                  phhi       = phhi,                                          &
+                  co2calc_coeffs = co2calc_coeffs,                            &
+                  co2calc_state = co2calc_state,                              &
+                  co3        = co3_tmp,                                       &
+                  co2star    = co2star_tmp,                                   &
+                  dco2star   = dco2star_pos_inc,                              &
+                  pco2surf   = pco2surf_tmp,                                  &
+                  dpco2      = dpco2_tmp,                                     &
+                  ph         = ph_tmp,                                        &
+                  marbl_status_log = marbl_status_log)
+
+             if (marbl_status_log%labort_marbl) then
+                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+                return
+             end if
+
+             call marbl_co2calc_surf(                                         &
+                  num_elements     = num_elements,                            &
+                  lcomp_co2calc_coeffs = .false.,                             &
+                  dic_in     = surface_vals(:,dic_ind),                       &
+                  xco2_in    = surface_input_forcings(ind%xco2_id)%field_0d,  &
+                  ta_in      = surface_vals(:,alk_ind) - 0.5_r8,              &
+                  pt_in      = surface_vals(:,po4_ind),                       &
+                  sit_in     = surface_vals(:,sio3_ind),                      &
+                  temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
+                  salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
+                  atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  phlo       = phlo,                                          &
+                  phhi       = phhi,                                          &
+                  co2calc_coeffs = co2calc_coeffs,                            &
+                  co2calc_state = co2calc_state,                              &
+                  co3        = co3_tmp,                                       &
+                  co2star    = co2star_tmp,                                   &
+                  dco2star   = dco2star_neg_inc,                              &
+                  pco2surf   = pco2surf_tmp,                                  &
+                  dpco2      = dpco2_tmp,                                     &
+                  ph         = ph_tmp,                                        &
+                  marbl_status_log = marbl_status_log)
+
+             if (marbl_status_log%labort_marbl) then
+                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+                return
+             end if
+
+             d_flux_co2_d_alk(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
           end if
  
           !-------------------------------------------------------------------
@@ -2509,6 +2634,8 @@ contains
                temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
                salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
                atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+               phlo       = phlo,                                          &
+               phhi       = phhi,                                          &
                co2calc_coeffs = co2calc_coeffs,                            &
                co2calc_state = co2calc_state,                              &
                co3        = co3,                                           &
@@ -2516,8 +2643,6 @@ contains
                dco2star   = dco2star_alt,                                  &
                pco2surf   = pco2surf_alt,                                  &
                dpco2      = dpco2_alt,                                     &
-               phlo       = phlo,                                          &
-               phhi       = phhi,                                          &
                ph         = ph_prev_alt_co2_surf,                          &
                marbl_status_log = marbl_status_log)
 
@@ -3373,9 +3498,9 @@ contains
     enddo
 
     call marbl_comp_CO3terms(&
-         dkm, column_kmt, pressure_correct, .true., co2calc_coeffs, co2calc_state, &
-         temperature, salinity, press_bar, dic_loc, alk_loc, po4_loc, sio3_loc,    &
-         ph_lower_bound, ph_upper_bound, ph, h2co3, hco3, co3, marbl_status_log)
+         dkm, column_kmt, pressure_correct, .true., temperature, salinity, press_bar, &
+         dic_loc, alk_loc, po4_loc, sio3_loc, ph_lower_bound, ph_upper_bound,         &
+         co2calc_coeffs, co2calc_state, ph, h2co3, hco3, co3, marbl_status_log)
 
     if (marbl_status_log%labort_marbl) then
       call marbl_status_log%log_error_trace('marbl_comp_CO3terms()', subname)
@@ -3398,10 +3523,10 @@ contains
     enddo
 
     call marbl_comp_CO3terms(&
-         dkm, column_kmt, pressure_correct, .false., co2calc_coeffs, co2calc_state,     &
-         temperature, salinity, press_bar, dic_alt_co2_loc, alk_alt_co2_loc, po4_loc,   &
-         sio3_loc, ph_lower_bound, ph_upper_bound, ph_alt_co2, h2co3_alt_co2,           &
-         hco3_alt_co2, co3_alt_co2, marbl_status_log)
+         dkm, column_kmt, pressure_correct, .false., temperature, salinity, press_bar,        &
+         dic_alt_co2_loc, alk_alt_co2_loc, po4_loc, sio3_loc, ph_lower_bound, ph_upper_bound, &
+         co2calc_coeffs, co2calc_state, ph_alt_co2, h2co3_alt_co2, hco3_alt_co2, co3_alt_co2, &
+         marbl_status_log)
 
     if (marbl_status_log%labort_marbl) then
       call marbl_status_log%log_error_trace('marbl_comp_CO3terms()', subname)
@@ -4269,17 +4394,17 @@ contains
     use marbl_parms     , only : Qp_zoo
     use marbl_parms     , only : Q
 
-    use marbl_parms     , only : DOC_reminR_light
-    use marbl_parms     , only : DON_reminR_light
-    use marbl_parms     , only : DOP_reminR_light
-    use marbl_parms     , only : DOC_reminR_dark
-    use marbl_parms     , only : DON_reminR_dark
-    use marbl_parms     , only : DOP_reminR_dark
+    use marbl_parms     , only : DOC_remin_rate_light
+    use marbl_parms     , only : DON_remin_rate_light
+    use marbl_parms     , only : DOP_remin_rate_light
+    use marbl_parms     , only : DOC_remin_rate_dark
+    use marbl_parms     , only : DON_remin_rate_dark
+    use marbl_parms     , only : DOP_remin_rate_dark
 
-    use marbl_parms     , only : DOCr_reminR0
-    use marbl_parms     , only : DONr_reminR0
-    use marbl_parms     , only : DOPr_reminR0
-    use marbl_parms     , only : DOMr_reminR_photo
+    use marbl_parms     , only : DOCr_remin_rate0
+    use marbl_parms     , only : DONr_remin_rate0
+    use marbl_parms     , only : DOPr_remin_rate0
+    use marbl_parms     , only : DOMr_remin_rate_photo
 
     integer(int_kind)                       , intent(in)  :: k
     integer                                 , intent(in)  :: auto_cnt
@@ -4301,12 +4426,6 @@ contains
     !-----------------------------------------------------------------------
     integer  :: subcol_ind
     real(r8) :: work
-    real(r8) :: DOC_reminR        ! remineralization rate (1/sec)
-    real(r8) :: DON_reminR        ! remineralization rate (1/sec)
-    real(r8) :: DOP_reminR        ! remineralization rate (1/sec)
-    real(r8) :: DOCr_reminR       ! remineralization rate (1/sec)
-    real(r8) :: DONr_reminR       ! remineralization rate (1/sec)
-    real(r8) :: DOPr_reminR       ! remineralization rate (1/sec)
     !-----------------------------------------------------------------------
 
     associate(                                                               &
@@ -4323,13 +4442,19 @@ contains
          zoo_loss_doc    => zooplankton_secondary_species(:)%zoo_loss_doc  , & ! input
          zoo_graze_doc   => zooplankton_secondary_species(:)%zoo_graze_doc , & ! input
          DOC_prod        => dissolved_organic_matter%DOC_prod              , & ! output production of DOC (mmol C/m^3/sec)
+         DOC_remin_rate  => dissolved_organic_matter%DOC_remin_rate        , & ! output remineralization rate of DOC (1/sec)
          DOC_remin       => dissolved_organic_matter%DOC_remin             , & ! output remineralization of DOC (mmol C/m^3/sec)
+         DOCr_remin_rate => dissolved_organic_matter%DOCr_remin_rate       , & ! output remineralization rate of DOCr
          DOCr_remin      => dissolved_organic_matter%DOCr_remin            , & ! output remineralization of DOCr
          DON_prod        => dissolved_organic_matter%DON_prod              , & ! output production of DON
+         DON_remin_rate  => dissolved_organic_matter%DON_remin_rate        , & ! output remineralization rate of DON
          DON_remin       => dissolved_organic_matter%DON_remin             , & ! output remineralization of DON
+         DONr_remin_rate => dissolved_organic_matter%DONr_remin_rate       , & ! output remineralization rate of DONr
          DONr_remin      => dissolved_organic_matter%DONr_remin            , & ! output remineralization of DONr
          DOP_prod        => dissolved_organic_matter%DOP_prod              , & ! output production of DOP
+         DOP_remin_rate  => dissolved_organic_matter%DOP_remin_rate        , & ! output remineralization rate of DOP
          DOP_remin       => dissolved_organic_matter%DOP_remin             , & ! output remineralization of DOP
+         DOPr_remin_rate => dissolved_organic_matter%DOPr_remin_rate       , & ! output remineralization rate of DOPr
          DOPr_remin      => dissolved_organic_matter%DOPr_remin              & ! output remineralization of DOPr
          )
 
@@ -4345,20 +4470,20 @@ contains
       !  Different remin rates in light and dark for semi-labile pools
       !-----------------------------------------------------------------------
 
-      DOC_reminR = c0
-      DON_reminR = c0
-      DOP_reminR = c0
+      DOC_remin_rate = c0
+      DON_remin_rate = c0
+      DOP_remin_rate = c0
 
       do subcol_ind = 1, PAR_nsubcols
          if (PAR_col_frac(subcol_ind) > c0) then
             if (PAR_avg(subcol_ind) > 1.0_r8) then
-               DOC_reminR = DOC_reminR + PAR_col_frac(subcol_ind) * DOC_reminR_light
-               DON_reminR = DON_reminR + PAR_col_frac(subcol_ind) * DON_reminR_light
-               DOP_reminR = DOP_reminR + PAR_col_frac(subcol_ind) * DOP_reminR_light
+               DOC_remin_rate = DOC_remin_rate + PAR_col_frac(subcol_ind) * DOC_remin_rate_light
+               DON_remin_rate = DON_remin_rate + PAR_col_frac(subcol_ind) * DON_remin_rate_light
+               DOP_remin_rate = DOP_remin_rate + PAR_col_frac(subcol_ind) * DOP_remin_rate_light
             else
-               DOC_reminR = DOC_reminR + PAR_col_frac(subcol_ind) * DOC_reminR_dark
-               DON_reminR = DON_reminR + PAR_col_frac(subcol_ind) * DON_reminR_dark
-               DOP_reminR = DOP_reminR + PAR_col_frac(subcol_ind) * DOP_reminR_dark
+               DOC_remin_rate = DOC_remin_rate + PAR_col_frac(subcol_ind) * DOC_remin_rate_dark
+               DON_remin_rate = DON_remin_rate + PAR_col_frac(subcol_ind) * DON_remin_rate_dark
+               DOP_remin_rate = DOP_remin_rate + PAR_col_frac(subcol_ind) * DOP_remin_rate_dark
             endif
          endif
       end do
@@ -4367,27 +4492,27 @@ contains
       !  Refractory remin increased in top layer from photodegradation due to UV
       !-----------------------------------------------------------------------
 
-      DOCr_reminR = DOCr_reminR0
-      DONr_reminR = DONr_reminR0
-      DOPr_reminR = DOPr_reminR0
+      DOCr_remin_rate = DOCr_remin_rate0
+      DONr_remin_rate = DONr_remin_rate0
+      DOPr_remin_rate = DOPr_remin_rate0
 
       if (k == 1) then
          do subcol_ind = 1, PAR_nsubcols
             if ((PAR_col_frac(subcol_ind) > c0) .and. (PAR_in(subcol_ind) > 1.0_r8)) then
                work = PAR_col_frac(subcol_ind) * (log(PAR_in(subcol_ind))*0.4373_r8) * (10.0e2/dz1)
-               DOCr_reminR = DOCr_reminR + work * DOMr_reminR_photo
-               DONr_reminR = DONr_reminR + work * DOMr_reminR_photo
-               DOPr_reminR = DOPr_reminR + work * DOMr_reminR_photo
+               DOCr_remin_rate = DOCr_remin_rate + work * DOMr_remin_rate_photo
+               DONr_remin_rate = DONr_remin_rate + work * DOMr_remin_rate_photo
+               DOPr_remin_rate = DOPr_remin_rate + work * DOMr_remin_rate_photo
             endif
          end do
       endif
 
-      DOC_remin  = DOC_loc  * DOC_reminR
-      DON_remin  = DON_loc  * DON_reminR
-      DOP_remin  = DOP_loc  * DOP_reminR
-      DOCr_remin = DOCr_loc * DOCr_reminR
-      DONr_remin = DONr_loc * DONr_reminR
-      DOPr_remin = DOPr_loc * DOPr_reminR
+      DOC_remin  = DOC_loc  * DOC_remin_rate
+      DON_remin  = DON_loc  * DON_remin_rate
+      DOP_remin  = DOP_loc  * DOP_remin_rate
+      DOCr_remin = DOCr_loc * DOCr_remin_rate
+      DONr_remin = DONr_loc * DONr_remin_rate
+      DOPr_remin = DOPr_loc * DOPr_remin_rate
 
     end associate
 

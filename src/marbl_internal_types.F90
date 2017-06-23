@@ -136,6 +136,8 @@ module marbl_internal_types
   type, public :: marbl_surface_forcing_internal_type
      real (r8), allocatable, dimension(:)   :: piston_velocity
      real (r8), allocatable, dimension(:)   :: flux_co2
+     real (r8), allocatable, dimension(:)   :: d_flux_co2_d_dic
+     real (r8), allocatable, dimension(:)   :: d_flux_co2_d_alk
      real (r8), allocatable, dimension(:)   :: flux_alt_co2 ! tracer flux alternative CO2 (nmol/cm^2/s)
      real (r8), allocatable, dimension(:)   :: co2star
      real (r8), allocatable, dimension(:)   :: dco2star
@@ -325,13 +327,19 @@ module marbl_internal_types
 
   type, public :: dissolved_organic_matter_type
      real (r8) :: DOC_prod         ! production of DOC (mmol C/m^3/sec)
+     real (r8) :: DOC_remin_rate   ! remineralization rate of DOC (1/sec)
      real (r8) :: DOC_remin        ! remineralization of DOC (mmol C/m^3/sec)
+     real (r8) :: DOCr_remin_rate  ! remineralization rate of DOCr
      real (r8) :: DOCr_remin       ! remineralization of DOCr
      real (r8) :: DON_prod         ! production of DON
+     real (r8) :: DON_remin_rate   ! remineralization rate of DON
      real (r8) :: DON_remin        ! remineralization of DON
+     real (r8) :: DONr_remin_rate  ! remineralization rate of DONr
      real (r8) :: DONr_remin       ! remineralization of DONr
      real (r8) :: DOP_prod         ! production of DOP
+     real (r8) :: DOP_remin_rate   ! remineralization rate of DOP
      real (r8) :: DOP_remin        ! remineralization of DOP
+     real (r8) :: DOPr_remin_rate  ! remineralization rate of DOPr
      real (r8) :: DOPr_remin       ! remineralization of DOPr
   end type dissolved_organic_matter_type
 
@@ -620,6 +628,8 @@ contains
 
     allocate(this%piston_velocity (num_elements))
     allocate(this%flux_co2        (num_elements))
+    allocate(this%d_flux_co2_d_dic(num_elements))
+    allocate(this%d_flux_co2_d_alk(num_elements))
     allocate(this%flux_alt_co2    (num_elements))
     allocate(this%co2star         (num_elements))
     allocate(this%dco2star        (num_elements))

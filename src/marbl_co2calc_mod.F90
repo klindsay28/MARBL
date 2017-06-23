@@ -93,6 +93,8 @@ contains
        temp,                     &
        salt,                     &
        atmpres,                  &
+       phlo,                     &
+       phhi,                     &
        co2calc_coeffs,           &
        co2calc_state,            &
        co3,                      &
@@ -100,8 +102,6 @@ contains
        dco2star,                 &
        pco2surf,                 &
        dpco2,                    &
-       phlo,                     &
-       phhi,                     &
        ph,                       &
        marbl_status_log)
 
@@ -122,17 +122,17 @@ contains
     real(kind=r8)                 , intent(in)    :: temp(num_elements)     ! temperature (degrees C)
     real(kind=r8)                 , intent(in)    :: salt(num_elements)     ! salinity (PSU)
     real(kind=r8)                 , intent(in)    :: atmpres(num_elements)  ! atmospheric pressure (atmosphere)
-    real(kind=r8)                 , intent(inout) :: phlo(num_elements)     ! lower limit of ph range
-    real(kind=r8)                 , intent(inout) :: phhi(num_elements)     ! upper limit of ph range
-    real(kind=r8)                 , intent(out)   :: ph(num_elements)       ! computed ph values, for initial guess on next time step
-    real(kind=r8)                 , intent(out)   :: co3(num_elements)      ! Carbonate Ion Concentration
+    real(kind=r8)                 , intent(in)    :: phlo(num_elements)     ! lower limit of ph range
+    real(kind=r8)                 , intent(in)    :: phhi(num_elements)     ! upper limit of ph range
     type(co2calc_coeffs_type)     , intent(inout) :: co2calc_coeffs(num_elements)
     type(co2calc_state_type)      , intent(inout) :: co2calc_state(num_elements)
+    real(kind=r8)                 , intent(out)   :: co3(num_elements)      ! Carbonate Ion Concentration
     real(kind=r8)                 , intent(out)   :: co2star(num_elements)  ! CO2*water (nmol/cm^3)
     real(kind=r8)                 , intent(out)   :: dco2star(num_elements) ! delta CO2 (nmol/cm^3)
     real(kind=r8)                 , intent(out)   :: pco2surf(num_elements) ! oceanic pCO2 (ppmv)
     real(kind=r8)                 , intent(out)   :: dpco2(num_elements)    ! Delta pCO2, i.e, pCO2ocn - pCO2atm (ppmv)
-    type(marbl_log_type), optional, intent(inout) :: marbl_status_log
+    real(kind=r8)                 , intent(out)   :: ph(num_elements)       ! computed ph values, for initial guess on next time step
+    type(marbl_log_type)          , intent(inout) :: marbl_status_log
 
     !---------------------------------------------------------------------------
     !   local variable declarations
@@ -196,15 +196,13 @@ contains
     !   compute htotal
     !---------------------------------------------------------------------------
 
-    call comp_htotal(num_elements, num_elements, co2calc_state_in,            &
-                     co2calc_coeffs, co2calc_state, phlo, phhi, htotal,       &
+    call comp_htotal(num_elements, num_elements, phlo, phhi, &
+                     co2calc_state_in, co2calc_coeffs, co2calc_state, htotal, &
                      marbl_status_log)
 
-    if (present (marbl_status_log)) then
-       if (marbl_status_log%labort_marbl) then
-          call marbl_status_log%log_error_trace("comp_htotal()", subname)
-          return
-       end if
+    if (marbl_status_log%labort_marbl) then
+       call marbl_status_log%log_error_trace("comp_htotal()", subname)
+       return
     end if
 
     !---------------------------------------------------------------------------
@@ -258,8 +256,8 @@ contains
 
   subroutine marbl_comp_CO3terms(&
        num_elements, num_active_elements, pressure_correct, lcomp_co2calc_coeffs,   &
-       co2calc_coeffs,  co2calc_state, temp, salt, press_bar, dic_in, ta_in, pt_in, &
-       sit_in, phlo, phhi, ph, H2CO3, HCO3, CO3, marbl_status_log)
+       temp, salt, press_bar, dic_in, ta_in, pt_in, sit_in, phlo, phhi, &
+       co2calc_coeffs, co2calc_state, ph, H2CO3, HCO3, CO3, marbl_status_log)
 
     !---------------------------------------------------------------------------
     ! Calculate H2CO3, HCO3, CO3 from total alkalinity, total CO2, temp, salinity (s), etc.
@@ -278,10 +276,10 @@ contains
     real(kind=r8)             , intent(in)    :: ta_in(num_elements)     ! total alkalinity (neq/cm^3)
     real(kind=r8)             , intent(in)    :: pt_in(num_elements)     ! inorganic phosphate (nmol/cm^3)
     real(kind=r8)             , intent(in)    :: sit_in(num_elements)    ! inorganic silicate (nmol/cm^3)
+    real(kind=r8)             , intent(in)    :: phlo(num_elements)      ! lower limit of pH range
+    real(kind=r8)             , intent(in)    :: phhi(num_elements)      ! upper limit of pH range
     type(co2calc_coeffs_type) , intent(inout) :: co2calc_coeffs(num_elements)
     type(co2calc_state_type)  , intent(inout) :: co2calc_state(num_elements)
-    real(kind=r8)             , intent(inout) :: phlo(num_elements)      ! lower limit of pH range
-    real(kind=r8)             , intent(inout) :: phhi(num_elements)      ! upper limit of pH range
     real(kind=r8)             , intent(out)   :: pH(num_elements)        ! computed ph values, for initial guess on next time step
     real(kind=r8)             , intent(out)   :: H2CO3(num_elements)     ! Carbonic Acid Concentration
     real(kind=r8)             , intent(out)   :: HCO3(num_elements)      ! Bicarbonate Ion Concentration
@@ -354,8 +352,8 @@ contains
     !   compute htotal
     !------------------------------------------------------------------------
 
-    call comp_htotal(num_elements, num_active_elements, co2calc_state_in,     &
-                     co2calc_coeffs, co2calc_state, phlo, phhi, htotal,       &
+    call comp_htotal(num_elements, num_active_elements, phlo, phhi, &
+                     co2calc_state_in, co2calc_coeffs, co2calc_state, htotal, &
                      marbl_status_log)
 
     if (marbl_status_log%labort_marbl) then
@@ -720,9 +718,9 @@ contains
 
   !*****************************************************************************
 
-  subroutine comp_htotal(num_elements, num_active_elements, co2calc_state_in, &
-                  co2calc_coeffs, co2calc_state, phlo, phhi, htotal,          &
-                  marbl_status_log)
+  subroutine comp_htotal(num_elements, num_active_elements, phlo, phhi, &
+                         co2calc_state_in, co2calc_coeffs, co2calc_state, htotal, &
+                         marbl_status_log)
 
     !---------------------------------------------------------------------------
     ! Calculate htotal (free concentration of H ion)
@@ -730,13 +728,13 @@ contains
 
     integer(kind=int_kind)        , intent(in)    :: num_elements
     integer(kind=int_kind)        , intent(in)    :: num_active_elements
+    real(kind=r8)                 , intent(in)    :: phlo(num_elements)   ! lower limit of pH range
+    real(kind=r8)                 , intent(in)    :: phhi(num_elements)   ! upper limit of pH range
     type(co2calc_state_type)      , intent(in)    :: co2calc_state_in(num_elements)
     type(co2calc_coeffs_type)     , intent(inout) :: co2calc_coeffs(num_elements)
     type(co2calc_state_type)      , intent(inout) :: co2calc_state(num_elements)
-    real(kind=r8)                 , intent(inout) :: phlo(num_elements)   ! lower limit of pH range
-    real(kind=r8)                 , intent(inout) :: phhi(num_elements)   ! upper limit of pH range
     real(kind=r8)                 , intent(out)   :: htotal(num_elements) ! free concentration of H ion
-    type(marbl_log_type), optional, intent(inout) :: marbl_status_log
+    type(marbl_log_type)          , intent(inout) :: marbl_status_log
 
     !---------------------------------------------------------------------------
     !   local variable declarations
