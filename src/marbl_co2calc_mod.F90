@@ -312,24 +312,9 @@ contains
     co2calc_state_in(:)%salt = salt
 
     associate(                         &
-         k0  => co2calc_coeffs(:)%k0,  &
          k1  => co2calc_coeffs(:)%k1,  &
          k2  => co2calc_coeffs(:)%k2,  &
-         ff  => co2calc_coeffs(:)%ff,  &
-         kw  => co2calc_coeffs(:)%kw,  &
-         kb  => co2calc_coeffs(:)%kb,  &
-         ks  => co2calc_coeffs(:)%ks,  &
-         kf  => co2calc_coeffs(:)%kf,  &
-         k1p => co2calc_coeffs(:)%k1p, &
-         k2p => co2calc_coeffs(:)%k2p, &
-         ksi => co2calc_coeffs(:)%ksi, &
-         bt  => co2calc_coeffs(:)%bt,  &
-         st  => co2calc_coeffs(:)%st,  &
-         ft  => co2calc_coeffs(:)%ft,  &
-         dic => co2calc_state(:)%dic,  &
-         ta  => co2calc_state(:)%ta,   &
-         pt  => co2calc_state(:)%pt,   &
-         sit => co2calc_state(:)%sit   &
+         dic => co2calc_state(:)%dic   &
          )
 
     !---------------------------------------------------------------------------
@@ -748,19 +733,6 @@ contains
     !---------------------------------------------------------------------------
 
     associate(                               &
-          k1  => co2calc_coeffs(:)%k1,       &
-          k2  => co2calc_coeffs(:)%k2,       &
-          kw  => co2calc_coeffs(:)%kw,       &
-          kb  => co2calc_coeffs(:)%kb,       &
-          ks  => co2calc_coeffs(:)%ks,       &
-          kf  => co2calc_coeffs(:)%kf,       &
-          k1p => co2calc_coeffs(:)%k1p,      &
-          k2p => co2calc_coeffs(:)%k2p,      &
-          k3p => co2calc_coeffs(:)%k3p,      &
-          ksi => co2calc_coeffs(:)%ksi,      &
-          bt  => co2calc_coeffs(:)%bt,       &
-          st  => co2calc_coeffs(:)%st,       &
-          ft  => co2calc_coeffs(:)%ft,       &
           dic => co2calc_state(:)%dic,       &
           ta  => co2calc_state(:)%ta,        &
           pt  => co2calc_state(:)%pt,        &
@@ -807,8 +779,8 @@ contains
     !   set x1 and x2 to the previous value of the pH +/- ~0.5.
     !---------------------------------------------------------------------------
 
-    call drtsafe(num_elements, num_active_elements, k1, k2, co2calc_state_in, &
-                 co2calc_coeffs, co2calc_state, x1, x2, xacc, htotal,         &
+    call drtsafe(num_elements, num_active_elements, co2calc_state_in, &
+                 co2calc_coeffs, co2calc_state, x1, x2, xacc, htotal, &
                  marbl_status_log)
 
     if (marbl_status_log%labort_marbl) then
@@ -822,8 +794,8 @@ contains
 
   !*****************************************************************************
 
-  subroutine drtsafe(num_elements, num_active_elements, k1, k2, co2calc_state_in, &
-                     co2calc_coeffs, co2calc_state, x1, x2, xacc, soln,           &
+  subroutine drtsafe(num_elements, num_active_elements, co2calc_state_in, &
+                     co2calc_coeffs, co2calc_state, x1, x2, xacc, soln,   &
                      marbl_status_log)
 
     !---------------------------------------------------------------------------
@@ -841,8 +813,6 @@ contains
 
     integer(kind=int_kind)        , intent(in)    :: num_elements
     integer(kind=int_kind)        , intent(in)    :: num_active_elements
-    real(kind=r8)                 , intent(in)    :: k1(num_elements)
-    real(kind=r8)                 , intent(in)    :: k2(num_elements)
     type(co2calc_state_type)      , intent(in)    :: co2calc_state_in(num_elements)
     type(co2calc_coeffs_type)     , intent(in)    :: co2calc_coeffs(num_elements)
     type(co2calc_state_type)      , intent(in)    :: co2calc_state(num_elements)
@@ -880,8 +850,8 @@ contains
     it = 0
 
     do
-       call total_alkalinity(num_elements, mask, k1, k2, x1, co2calc_coeffs, co2calc_state, flo, df)
-       call total_alkalinity(num_elements, mask, k1, k2, x2, co2calc_coeffs, co2calc_state, fhi, df)
+       call total_alkalinity(num_elements, mask, x1, co2calc_coeffs, co2calc_state, flo, df)
+       call total_alkalinity(num_elements, mask, x2, co2calc_coeffs, co2calc_state, fhi, df)
 
        where ( mask )
           mask = (flo > c0 .AND. fhi > c0) .OR. &
@@ -982,7 +952,7 @@ contains
        dx(c) = dxold(c)
     end do
 
-    call total_alkalinity(num_elements, mask, k1, k2, soln, co2calc_coeffs, co2calc_state, f, df)
+    call total_alkalinity(num_elements, mask, soln, co2calc_coeffs, co2calc_state, f, df)
 
     !---------------------------------------------------------------------------
     !   perform iterations, zeroing mask when a location has converged
@@ -1012,7 +982,7 @@ contains
 
        if (.not. ANY(mask)) return
 
-       call total_alkalinity(num_elements, mask, k1, k2, soln, co2calc_coeffs, co2calc_state, f, df)
+       call total_alkalinity(num_elements, mask, soln, co2calc_coeffs, co2calc_state, f, df)
 
        do c = 1,num_elements
           if (mask(c)) then
@@ -1036,7 +1006,7 @@ contains
 
   !*****************************************************************************
 
-  subroutine total_alkalinity(num_elements, mask, k1, k2, x, co2calc_coeffs, &
+  subroutine total_alkalinity(num_elements, mask, x, co2calc_coeffs, &
              co2calc_state, fn, df)
 
     !---------------------------------------------------------------------------
@@ -1051,8 +1021,6 @@ contains
 
     integer(kind=int_kind)    , intent(in)  :: num_elements
     logical(kind=log_kind)    , intent(in)  :: mask(num_elements)
-    real(kind=r8)             , intent(in)  :: k1(num_elements)
-    real(kind=r8)             , intent(in)  :: k2(num_elements)
     real(kind=r8)             , intent(in)  :: x(num_elements)
     type(co2calc_coeffs_type) , intent(in)  :: co2calc_coeffs(num_elements)
     type(co2calc_state_type)  , intent(in)  :: co2calc_state(num_elements)
@@ -1069,6 +1037,8 @@ contains
     !---------------------------------------------------------------------------
 
     associate(                         &
+         k1  => co2calc_coeffs(:)%k1,  &
+         k2  => co2calc_coeffs(:)%k2,  &
          kw  => co2calc_coeffs(:)%kw,  &
          kb  => co2calc_coeffs(:)%kb,  &
          ks  => co2calc_coeffs(:)%ks,  &
