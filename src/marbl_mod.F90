@@ -2243,6 +2243,9 @@ contains
     use marbl_internal_types     , only : marbl_surface_saved_state_indexing_type
     use marbl_schmidt_number_mod , only : schmidt_co2_surf
     use marbl_oxygen             , only : schmidt_o2_surf
+    use marbl_co2calc_mod        , only : marbl_co2calc_state_set
+    use marbl_co2calc_mod        , only : marbl_co2calc_state_set_dic
+    use marbl_co2calc_mod        , only : marbl_co2calc_state_set_ta
     use marbl_co2calc_mod        , only : marbl_co2calc_surf
     use marbl_co2calc_mod        , only : co2calc_coeffs_type
     use marbl_co2calc_mod        , only : co2calc_state_type
@@ -2280,6 +2283,7 @@ contains
 
     integer (int_kind) :: n                              ! loop indices
     integer (int_kind) :: auto_ind                       ! autotroph functional group index
+    real (r8)          :: sw_press_bar(num_elements)     ! pressure in seawater (bar)
     real (r8)          :: phlo(num_elements)             ! lower bound for ph in solver
     real (r8)          :: phhi(num_elements)             ! upper bound for ph in solver
     real (r8)          :: ph_new(num_elements)           ! computed ph from solver
@@ -2437,30 +2441,38 @@ contains
              phhi(:) = phhi_surf_init
           end where
 
+          sw_press_bar(:) = c0
+
+          call marbl_co2calc_state_set( &
+               num_elements        = num_elements, &
+               num_active_elements = num_elements, &
+               temp                = surface_input_forcings(ind%sst_id)%field_0d, &
+               salt                = surface_input_forcings(ind%sss_id)%field_0d, &
+               sw_press_bar        = sw_press_bar, &
+               dic                 = surface_vals(:,dic_ind), &
+               ta                  = surface_vals(:,alk_ind), &
+               pt                  = surface_vals(:,po4_ind), &
+               sit                 = surface_vals(:,sio3_ind), &
+               co2calc_state       = co2calc_state)
+
           ! Note the following computes a new ph_prev_surf
           ! pass in sections of surface_input_forcings instead of associated vars because of problems with intel/15.0.3
-          call marbl_co2calc_surf(                                         &
-               num_elements     = num_elements,                            &
-               lcomp_co2calc_coeffs = .true.,                              &
-               dic_in     = surface_vals(:,dic_ind),                       &
-               xco2_in    = surface_input_forcings(ind%xco2_id)%field_0d,  &
-               ta_in      = surface_vals(:,alk_ind),                       &
-               pt_in      = surface_vals(:,po4_ind),                       &
-               sit_in     = surface_vals(:,sio3_ind),                      &
-               temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
-               salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
-               atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
-               phlo       = phlo,                                          &
-               phhi       = phhi,                                          &
-               co2calc_coeffs = co2calc_coeffs,                            &
-               co2calc_state = co2calc_state,                              &
-               co3        = co3,                                           &
-               co2star    = co2star,                                       &
-               dco2star   = dco2star,                                      &
-               pco2surf   = pco2surf,                                      &
-               dpco2      = dpco2,                                         &
-               ph         = ph_prev_surf,                                  &
-               marbl_status_log = marbl_status_log)
+          call marbl_co2calc_surf( &
+               num_elements         = num_elements, &
+               lcomp_co2calc_coeffs = .true., &
+               co2calc_state_in     = co2calc_state, &
+               atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+               xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
+               phlo                 = phlo, &
+               phhi                 = phhi, &
+               co2calc_coeffs       = co2calc_coeffs, &
+               co3                  = co3, &
+               co2star              = co2star, &
+               dco2star             = dco2star, &
+               pco2surf             = pco2surf, &
+               dpco2                = dpco2, &
+               ph                   = ph_prev_surf, &
+               marbl_status_log     = marbl_status_log)
 
           if (marbl_status_log%labort_marbl) then
              call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
@@ -2475,61 +2487,68 @@ contains
           if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_DIC_GAS_FLUX_d_DIC)%compute_now) then
              ! centered finite difference approximation
 
-             call marbl_co2calc_surf(                                         &
-                  num_elements     = num_elements,                            &
-                  lcomp_co2calc_coeffs = .false.,                             &
-                  dic_in     = surface_vals(:,dic_ind) + 0.5_r8,              &
-                  xco2_in    = surface_input_forcings(ind%xco2_id)%field_0d,  &
-                  ta_in      = surface_vals(:,alk_ind),                       &
-                  pt_in      = surface_vals(:,po4_ind),                       &
-                  sit_in     = surface_vals(:,sio3_ind),                      &
-                  temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
-                  salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
-                  atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
-                  phlo       = phlo,                                          &
-                  phhi       = phhi,                                          &
-                  co2calc_coeffs = co2calc_coeffs,                            &
-                  co2calc_state = co2calc_state,                              &
-                  co3        = co3_tmp,                                       &
-                  co2star    = co2star_tmp,                                   &
-                  dco2star   = dco2star_pos_inc,                              &
-                  pco2surf   = pco2surf_tmp,                                  &
-                  dpco2      = dpco2_tmp,                                     &
-                  ph         = ph_tmp,                                        &
-                  marbl_status_log = marbl_status_log)
+             call marbl_co2calc_state_set_dic( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  dic                 = surface_vals(:,dic_ind) + 0.5_r8, &
+                  co2calc_state       = co2calc_state)
+
+             call marbl_co2calc_surf( &
+                  num_elements         = num_elements, &
+                  lcomp_co2calc_coeffs = .false., &
+                  co2calc_state_in     = co2calc_state, &
+                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
+                  phlo                 = phlo, &
+                  phhi                 = phhi, &
+                  co2calc_coeffs       = co2calc_coeffs, &
+                  co3                  = co3_tmp, &
+                  co2star              = co2star_tmp, &
+                  dco2star             = dco2star_pos_inc, &
+                  pco2surf             = pco2surf_tmp, &
+                  dpco2                = dpco2_tmp, &
+                  ph                   = ph_tmp, &
+                  marbl_status_log     = marbl_status_log)
 
              if (marbl_status_log%labort_marbl) then
                 call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
                 return
              end if
 
-             call marbl_co2calc_surf(                                         &
-                  num_elements     = num_elements,                            &
-                  lcomp_co2calc_coeffs = .false.,                             &
-                  dic_in     = surface_vals(:,dic_ind) - 0.5_r8,              &
-                  xco2_in    = surface_input_forcings(ind%xco2_id)%field_0d,  &
-                  ta_in      = surface_vals(:,alk_ind),                       &
-                  pt_in      = surface_vals(:,po4_ind),                       &
-                  sit_in     = surface_vals(:,sio3_ind),                      &
-                  temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
-                  salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
-                  atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
-                  phlo       = phlo,                                          &
-                  phhi       = phhi,                                          &
-                  co2calc_coeffs = co2calc_coeffs,                            &
-                  co2calc_state = co2calc_state,                              &
-                  co3        = co3_tmp,                                       &
-                  co2star    = co2star_tmp,                                   &
-                  dco2star   = dco2star_neg_inc,                              &
-                  pco2surf   = pco2surf_tmp,                                  &
-                  dpco2      = dpco2_tmp,                                     &
-                  ph         = ph_tmp,                                        &
-                  marbl_status_log = marbl_status_log)
+             call marbl_co2calc_state_set_dic( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  dic                 = surface_vals(:,dic_ind) - 0.5_r8, &
+                  co2calc_state       = co2calc_state)
+
+             call marbl_co2calc_surf( &
+                  num_elements         = num_elements, &
+                  lcomp_co2calc_coeffs = .false., &
+                  co2calc_state_in     = co2calc_state, &
+                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
+                  phlo                 = phlo, &
+                  phhi                 = phhi, &
+                  co2calc_coeffs       = co2calc_coeffs, &
+                  co3                  = co3_tmp, &
+                  co2star              = co2star_tmp, &
+                  dco2star             = dco2star_neg_inc, &
+                  pco2surf             = pco2surf_tmp, &
+                  dpco2                = dpco2_tmp, &
+                  ph                   = ph_tmp, &
+                  marbl_status_log     = marbl_status_log)
 
              if (marbl_status_log%labort_marbl) then
                 call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
                 return
              end if
+
+             ! reset dic in co2calc_state
+             call marbl_co2calc_state_set_dic( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  dic                 = surface_vals(:,dic_ind), &
+                  co2calc_state       = co2calc_state)
 
              d_flux_co2_d_dic(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
           end if
@@ -2537,61 +2556,68 @@ contains
           if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_DIC_GAS_FLUX_d_ALK)%compute_now) then
              ! centered finite difference approximation
 
-             call marbl_co2calc_surf(                                         &
-                  num_elements     = num_elements,                            &
-                  lcomp_co2calc_coeffs = .false.,                             &
-                  dic_in     = surface_vals(:,dic_ind),                       &
-                  xco2_in    = surface_input_forcings(ind%xco2_id)%field_0d,  &
-                  ta_in      = surface_vals(:,alk_ind) + 0.5_r8,              &
-                  pt_in      = surface_vals(:,po4_ind),                       &
-                  sit_in     = surface_vals(:,sio3_ind),                      &
-                  temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
-                  salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
-                  atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
-                  phlo       = phlo,                                          &
-                  phhi       = phhi,                                          &
-                  co2calc_coeffs = co2calc_coeffs,                            &
-                  co2calc_state = co2calc_state,                              &
-                  co3        = co3_tmp,                                       &
-                  co2star    = co2star_tmp,                                   &
-                  dco2star   = dco2star_pos_inc,                              &
-                  pco2surf   = pco2surf_tmp,                                  &
-                  dpco2      = dpco2_tmp,                                     &
-                  ph         = ph_tmp,                                        &
-                  marbl_status_log = marbl_status_log)
+             call marbl_co2calc_state_set_ta( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  ta                  = surface_vals(:,alk_ind) + 0.5_r8, &
+                  co2calc_state       = co2calc_state)
+
+             call marbl_co2calc_surf( &
+                  num_elements         = num_elements, &
+                  lcomp_co2calc_coeffs = .false., &
+                  co2calc_state_in     = co2calc_state, &
+                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
+                  phlo                 = phlo, &
+                  phhi                 = phhi, &
+                  co2calc_coeffs       = co2calc_coeffs, &
+                  co3                  = co3_tmp, &
+                  co2star              = co2star_tmp, &
+                  dco2star             = dco2star_pos_inc, &
+                  pco2surf             = pco2surf_tmp, &
+                  dpco2                = dpco2_tmp, &
+                  ph                   = ph_tmp, &
+                  marbl_status_log     = marbl_status_log)
 
              if (marbl_status_log%labort_marbl) then
                 call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
                 return
              end if
 
-             call marbl_co2calc_surf(                                         &
-                  num_elements     = num_elements,                            &
-                  lcomp_co2calc_coeffs = .false.,                             &
-                  dic_in     = surface_vals(:,dic_ind),                       &
-                  xco2_in    = surface_input_forcings(ind%xco2_id)%field_0d,  &
-                  ta_in      = surface_vals(:,alk_ind) - 0.5_r8,              &
-                  pt_in      = surface_vals(:,po4_ind),                       &
-                  sit_in     = surface_vals(:,sio3_ind),                      &
-                  temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
-                  salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
-                  atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
-                  phlo       = phlo,                                          &
-                  phhi       = phhi,                                          &
-                  co2calc_coeffs = co2calc_coeffs,                            &
-                  co2calc_state = co2calc_state,                              &
-                  co3        = co3_tmp,                                       &
-                  co2star    = co2star_tmp,                                   &
-                  dco2star   = dco2star_neg_inc,                              &
-                  pco2surf   = pco2surf_tmp,                                  &
-                  dpco2      = dpco2_tmp,                                     &
-                  ph         = ph_tmp,                                        &
-                  marbl_status_log = marbl_status_log)
+             call marbl_co2calc_state_set_ta( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  ta                  = surface_vals(:,alk_ind) - 0.5_r8, &
+                  co2calc_state       = co2calc_state)
+
+             call marbl_co2calc_surf( &
+                  num_elements         = num_elements, &
+                  lcomp_co2calc_coeffs = .false., &
+                  co2calc_state_in     = co2calc_state, &
+                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
+                  phlo                 = phlo, &
+                  phhi                 = phhi, &
+                  co2calc_coeffs       = co2calc_coeffs, &
+                  co3                  = co3_tmp, &
+                  co2star              = co2star_tmp, &
+                  dco2star             = dco2star_neg_inc, &
+                  pco2surf             = pco2surf_tmp, &
+                  dpco2                = dpco2_tmp, &
+                  ph                   = ph_tmp, &
+                  marbl_status_log     = marbl_status_log)
 
              if (marbl_status_log%labort_marbl) then
                 call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
                 return
              end if
+
+             ! reset ta in co2calc_state
+             call marbl_co2calc_state_set_ta( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  ta                  = surface_vals(:,alk_ind), &
+                  co2calc_state       = co2calc_state)
 
              d_flux_co2_d_alk(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
           end if
@@ -2621,30 +2647,36 @@ contains
              phhi(:) = phhi_surf_init
           end where
 
+          call marbl_co2calc_state_set_dic( &
+               num_elements        = num_elements, &
+               num_active_elements = num_elements, &
+               dic                 = surface_vals(:,dic_alt_co2_ind), &
+               co2calc_state       = co2calc_state)
+
+          call marbl_co2calc_state_set_ta( &
+               num_elements        = num_elements, &
+               num_active_elements = num_elements, &
+               ta                  = surface_vals(:,alk_alt_co2_ind), &
+               co2calc_state       = co2calc_state)
+
           ! Note the following computes a new ph_prev_alt_co2
           ! pass in sections of surface_input_forcings instead of associated vars because of problems with intel/15.0.3
-          call marbl_co2calc_surf(                                         &
-               num_elements     = num_elements,                            &
-               lcomp_co2calc_coeffs = .false.,                             &
-               dic_in     = surface_vals(:,dic_alt_co2_ind),               &
-               xco2_in    = surface_input_forcings(ind%xco2_alt_co2_id)%field_0d, &
-               ta_in      = surface_vals(:,alk_alt_co2_ind),               &
-               pt_in      = surface_vals(:,po4_ind),                       &
-               sit_in     = surface_vals(:,sio3_ind),                      &
-               temp       = surface_input_forcings(ind%sst_id)%field_0d,   &
-               salt       = surface_input_forcings(ind%sss_id)%field_0d,   &
-               atmpres    = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
-               phlo       = phlo,                                          &
-               phhi       = phhi,                                          &
-               co2calc_coeffs = co2calc_coeffs,                            &
-               co2calc_state = co2calc_state,                              &
-               co3        = co3,                                           &
-               co2star    = co2star_alt,                                   &
-               dco2star   = dco2star_alt,                                  &
-               pco2surf   = pco2surf_alt,                                  &
-               dpco2      = dpco2_alt,                                     &
-               ph         = ph_prev_alt_co2_surf,                          &
-               marbl_status_log = marbl_status_log)
+          call marbl_co2calc_surf( &
+               num_elements         = num_elements, &
+               lcomp_co2calc_coeffs = .false., &
+               co2calc_state_in     = co2calc_state, &
+               atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+               xco2_in              = surface_input_forcings(ind%xco2_alt_co2_id)%field_0d, &
+               phlo                 = phlo, &
+               phhi                 = phhi, &
+               co2calc_coeffs       = co2calc_coeffs, &
+               co3                  = co3, &
+               co2star              = co2star_alt, &
+               dco2star             = dco2star_alt, &
+               pco2surf             = pco2surf_alt, &
+               dpco2                = dpco2_alt, &
+               ph                   = ph_prev_alt_co2_surf, &
+               marbl_status_log     = marbl_status_log)
 
             if (marbl_status_log%labort_marbl) then
                call marbl_status_log%log_error_trace('co2calc_surf() with flux_alt_co2', subname)
@@ -3421,6 +3453,9 @@ contains
        salinity, tracer_local, marbl_tracer_indices, carbonate, ph_prev_col,   &
        ph_prev_alt_co2_col, zsat_calcite, zsat_aragonite, marbl_status_log)
 
+    use marbl_co2calc_mod, only : marbl_co2calc_state_set
+    use marbl_co2calc_mod, only : marbl_co2calc_state_set_dic
+    use marbl_co2calc_mod, only : marbl_co2calc_state_set_ta
     use marbl_co2calc_mod, only : marbl_comp_co3terms
     use marbl_co2calc_mod, only : marbl_comp_co3_sat_vals
     use marbl_co2calc_mod, only : co2calc_coeffs_type
@@ -3497,10 +3532,22 @@ contains
 
     enddo
 
-    call marbl_comp_CO3terms(&
-         dkm, column_kmt, pressure_correct, .true., temperature, salinity, press_bar, &
-         dic_loc, alk_loc, po4_loc, sio3_loc, ph_lower_bound, ph_upper_bound,         &
-         co2calc_coeffs, co2calc_state, ph, h2co3, hco3, co3, marbl_status_log)
+    call marbl_co2calc_state_set( &
+         num_elements        = dkm, &
+         num_active_elements = column_kmt, &
+         temp                = temperature, &
+         salt                = salinity, &
+         sw_press_bar        = press_bar, &
+         dic                 = dic_loc(:), &
+         ta                  = alk_loc(:), &
+         pt                  = po4_loc(:), &
+         sit                 = sio3_loc(:), &
+         co2calc_state       = co2calc_state)
+
+    call marbl_comp_CO3terms( &
+         dkm, column_kmt, pressure_correct, .true., &
+         co2calc_state, ph_lower_bound, ph_upper_bound, &
+         co2calc_coeffs, ph, h2co3, hco3, co3, marbl_status_log)
 
     if (marbl_status_log%labort_marbl) then
       call marbl_status_log%log_error_trace('marbl_comp_CO3terms()', subname)
@@ -3522,10 +3569,22 @@ contains
 
     enddo
 
+    call marbl_co2calc_state_set_dic( &
+         num_elements        = dkm, &
+         num_active_elements = column_kmt, &
+         dic                 = dic_alt_co2_loc(:), &
+         co2calc_state       = co2calc_state)
+
+    call marbl_co2calc_state_set_ta( &
+         num_elements        = dkm, &
+         num_active_elements = column_kmt, &
+         ta                  = alk_alt_co2_loc(:), &
+         co2calc_state       = co2calc_state)
+
     call marbl_comp_CO3terms(&
-         dkm, column_kmt, pressure_correct, .false., temperature, salinity, press_bar,        &
-         dic_alt_co2_loc, alk_alt_co2_loc, po4_loc, sio3_loc, ph_lower_bound, ph_upper_bound, &
-         co2calc_coeffs, co2calc_state, ph_alt_co2, h2co3_alt_co2, hco3_alt_co2, co3_alt_co2, &
+         dkm, column_kmt, pressure_correct, .false., &
+         co2calc_state, ph_lower_bound, ph_upper_bound, &
+         co2calc_coeffs, ph_alt_co2, h2co3_alt_co2, hco3_alt_co2, co3_alt_co2, &
          marbl_status_log)
 
     if (marbl_status_log%labort_marbl) then
