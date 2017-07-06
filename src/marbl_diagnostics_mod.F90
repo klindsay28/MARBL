@@ -160,6 +160,11 @@ module marbl_diagnostics_mod
     integer(int_kind) :: Lig_photochem
     integer(int_kind) :: Lig_deg
 
+    integer(int_kind) :: d_bottom_J_DIC_d_DIC
+    integer(int_kind) :: d_bottom_J_DIC_d_ALK
+    integer(int_kind) :: d_bottom_J_ALK_d_DIC
+    integer(int_kind) :: d_bottom_J_ALK_d_ALK
+
     ! Particulate 3D diags
     integer(int_kind) :: POC_FLUX_IN
     integer(int_kind) :: POC_PROD
@@ -1834,6 +1839,54 @@ contains
         return
       end if
 
+      lname    = 'd_bottom_J_DIC_d_DIC'
+      sname    = 'd_bottom_J_DIC_d_DIC'
+      units    = '1/s'
+      vgrid    = 'none'
+      truncate = .false.
+      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+           ind%d_bottom_J_DIC_d_DIC, marbl_status_log)
+      if (marbl_status_log%labort_marbl) then
+        call log_add_diagnostics_error(marbl_status_log, sname, subname)
+        return
+      end if
+
+      lname    = 'd_bottom_J_DIC_d_ALK'
+      sname    = 'd_bottom_J_DIC_d_ALK'
+      units    = '1/s'
+      vgrid    = 'none'
+      truncate = .false.
+      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+           ind%d_bottom_J_DIC_d_ALK, marbl_status_log)
+      if (marbl_status_log%labort_marbl) then
+        call log_add_diagnostics_error(marbl_status_log, sname, subname)
+        return
+      end if
+
+      lname    = 'd_bottom_J_ALK_d_DIC'
+      sname    = 'd_bottom_J_ALK_d_DIC'
+      units    = '1/s'
+      vgrid    = 'none'
+      truncate = .false.
+      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+           ind%d_bottom_J_ALK_d_DIC, marbl_status_log)
+      if (marbl_status_log%labort_marbl) then
+        call log_add_diagnostics_error(marbl_status_log, sname, subname)
+        return
+      end if
+
+      lname    = 'd_bottom_J_ALK_d_ALK'
+      sname    = 'd_bottom_J_ALK_d_ALK'
+      units    = '1/s'
+      vgrid    = 'none'
+      truncate = .false.
+      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+           ind%d_bottom_J_ALK_d_ALK, marbl_status_log)
+      if (marbl_status_log%labort_marbl) then
+        call log_add_diagnostics_error(marbl_status_log, sname, subname)
+        return
+      end if
+
       ! Particulate 3D diags
       lname = 'POC Flux into Cell'
       sname = 'POC_FLUX_IN'
@@ -3241,6 +3294,7 @@ contains
        Lig_prod, Lig_loss, Lig_scavenge, Fefree,      &
        Lig_photochem, Lig_deg,                        &
        interior_restore,                              &
+       d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK, &
        marbl_interior_forcing_diags,                  &
        marbl_status_log)
 
@@ -3279,6 +3333,8 @@ contains
     real (r8)                                 , intent(in) :: Lig_photochem(domain%km)
     real (r8)                                 , intent(in) :: Lig_deg(domain%km)
     real (r8)                                 , intent(in) :: interior_restore(:,:)       ! (marbl_total_tracer_cnt, km) local restoring terms for nutrients (mmol ./m^3/sec)
+    real (r8)                                 , intent(in) :: d_bottom_CaCO3_remin_d_DIC
+    real (r8)                                 , intent(in) :: d_bottom_CaCO3_remin_d_ALK
     type (marbl_diagnostics_type)             , intent(inout) :: marbl_interior_forcing_diags
     type (marbl_log_type)                     , intent(inout) :: marbl_status_log
 
@@ -3362,6 +3418,10 @@ contains
 
     call store_diagnostics_interior_restore(interior_restore,                 &
                                             marbl_interior_forcing_diags)
+
+    call store_diagnostics_interior_partial_derivs(              &
+         d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK, &
+         marbl_interior_forcing_diags)
 
     end associate
 
@@ -4440,6 +4500,38 @@ contains
     end associate
 
   end subroutine store_diagnostics_interior_restore
+
+  !***********************************************************************
+
+  subroutine store_diagnostics_interior_partial_derivs( &
+         d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK, &
+         marbl_diags)
+
+    use marbl_constants_mod, only : c2
+
+    real (r8)                          , intent(in)    :: d_bottom_CaCO3_remin_d_DIC
+    real (r8)                          , intent(in)    :: d_bottom_CaCO3_remin_d_ALK
+    type(marbl_diagnostics_type)       , intent(inout) :: marbl_diags
+
+    integer :: n
+
+    associate(                               &
+         diags   => marbl_diags%diags,       &
+         ind     => marbl_interior_diag_ind  &
+         )
+
+    if (diags(ind%d_bottom_J_DIC_d_DIC)%compute_now) &
+      diags(ind%d_bottom_J_DIC_d_DIC)%field_2d(1) = d_bottom_CaCO3_remin_d_DIC
+    if (diags(ind%d_bottom_J_DIC_d_ALK)%compute_now) &
+      diags(ind%d_bottom_J_DIC_d_ALK)%field_2d(1) = d_bottom_CaCO3_remin_d_ALK
+    if (diags(ind%d_bottom_J_ALK_d_DIC)%compute_now) &
+      diags(ind%d_bottom_J_ALK_d_DIC)%field_2d(1) = c2 * d_bottom_CaCO3_remin_d_DIC
+    if (diags(ind%d_bottom_J_ALK_d_ALK)%compute_now) &
+      diags(ind%d_bottom_J_ALK_d_ALK)%field_2d(1) = c2 * d_bottom_CaCO3_remin_d_ALK
+
+    end associate
+
+  end subroutine store_diagnostics_interior_partial_derivs
 
   !*****************************************************************************
 

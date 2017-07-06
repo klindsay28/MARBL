@@ -916,12 +916,14 @@ contains
 
     !  Compute time derivatives for ecosystem state variables
 
-    use marbl_ciso_mod      , only : marbl_ciso_set_interior_forcing
-    use marbl_sizes         , only : marbl_total_tracer_cnt
-    use marbl_internal_types, only : marbl_internal_timers_type
-    use marbl_internal_types, only : marbl_timer_indexing_type
-    use marbl_internal_types, only : marbl_interior_saved_state_indexing_type
-    use marbl_restore_mod   , only : marbl_restore_compute_interior_restore
+    use marbl_ciso_mod       , only : marbl_ciso_set_interior_forcing
+    use marbl_sizes          , only : marbl_total_tracer_cnt
+    use marbl_internal_types , only : marbl_internal_timers_type
+    use marbl_internal_types , only : marbl_timer_indexing_type
+    use marbl_internal_types , only : marbl_interior_saved_state_indexing_type
+    use marbl_restore_mod    , only : marbl_restore_compute_interior_restore
+
+    use marbl_diagnostics_mod, only : marbl_interior_diag_ind
 
     type    (marbl_domain_type)                 , intent(in)    :: domain
     type(marbl_forcing_fields_type)             , intent(in)    :: interior_forcings(:)
@@ -954,6 +956,8 @@ contains
     integer (int_kind) :: n         ! tracer index
     integer (int_kind) :: k         ! vertical level index
 
+    logical(log_kind) :: lcompute_bottom_co3_partial_derivs
+
     real (r8) :: O2_production(domain%km)    ! O2 production
     real (r8) :: O2_consumption(domain%km)   ! O2 consumption
     real (r8) :: nitrif(domain%km)           ! nitrification (NH4 -> NO3) (mmol N/m^3/sec)
@@ -965,8 +969,6 @@ contains
     real (r8) :: Fe_scavenge(domain%km)      ! loss of dissolved iron, scavenging (mmol Fe/m^3/sec)
     real (r8) :: Lig_scavenge(domain%km)     ! loss of Fe-binding Ligand from scavenging (mmol Fe/m^3/sec)
     real (r8) :: QA_dust_def(domain%km)
-    real (r8) :: zsat_calcite(domain%km)     ! Calcite Saturation Depth
-    real (r8) :: zsat_aragonite(domain%km)   ! Aragonite Saturation Depth
     real (r8) :: PON_remin(domain%km)        ! remin of PON
     real (r8) :: PON_sed_loss(domain%km)     ! loss of PON to sediments
     real (r8) :: Fefree(domain%km)           ! unbound Fe
@@ -983,6 +985,14 @@ contains
     type(zooplankton_secondary_species_type) :: zooplankton_secondary_species(zooplankton_cnt, domain%km)
     type(dissolved_organic_matter_type)      :: dissolved_organic_matter(domain%km)
     type(carbonate_type)                     :: carbonate(domain%km)
+
+    ! FIXME : move these scalar quantities into carbonate_type
+    !   after depth dimension is moved into existing components of carbonate_type
+    real(r8)                                 :: d_bottom_CO3_d_DIC
+    real(r8)                                 :: d_bottom_CO3_d_ALK
+
+    real(r8)                                 :: d_bottom_CaCO3_remin_d_DIC
+    real(r8)                                 :: d_bottom_CaCO3_remin_d_ALK
 
     ! NOTE(bja, 2015-07) vectorization: arrays that are (n, k, c, i)
     ! probably can not be vectorized reasonably over c without memory
@@ -1068,14 +1078,18 @@ contains
     call marbl_init_particulate_terms(1, surface_forcing_indices, &
          POC, POP, P_CaCO3, P_CaCO3_ALT_CO2, P_SiO2, dust, P_iron, QA_dust_def(:), dust_flux_in)
 
-    call marbl_timers%start(marbl_timer_indices%carbonate_chem_id,            &
-                            marbl_status_log)
-    call marbl_compute_carbonate_chemistry(domain, temperature, pressure,     &
-         salinity, tracer_local(:, :), marbl_tracer_indices, carbonate(:),    &
-         ph_prev_col(:), ph_prev_alt_co2_col(:), zsat_calcite(:),             &
-         zsat_aragonite(:), marbl_status_log)
-    call marbl_timers%stop(marbl_timer_indices%carbonate_chem_id,             &
-                            marbl_status_log)
+    lcompute_bottom_co3_partial_derivs = &
+      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_DIC_d_DIC)%compute_now .or. &
+      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_DIC_d_ALK)%compute_now .or. &
+      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_ALK_d_DIC)%compute_now .or. &
+      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_ALK_d_ALK)%compute_now
+
+    call marbl_timers%start(marbl_timer_indices%carbonate_chem_id, marbl_status_log)
+    call marbl_compute_carbonate_chemistry(domain, lcompute_bottom_co3_partial_derivs, &
+         temperature, pressure, salinity, tracer_local(:, :), marbl_tracer_indices,    &
+         ph_prev_col(:), ph_prev_alt_co2_col(:), carbonate(:),                         &
+         d_bottom_CO3_d_DIC, d_bottom_CO3_d_ALK, marbl_status_log)
+    call marbl_timers%stop(marbl_timer_indices%carbonate_chem_id, marbl_status_log)
 
     if (marbl_status_log%labort_marbl) then
        call marbl_status_log%log_error_trace(&
@@ -1156,12 +1170,14 @@ contains
 
        ! FIXME #28: need to pull particulate share out
        !            of compute_particulate_terms!
-       call marbl_compute_particulate_terms(k, domain,                   &
-            marbl_particulate_share, POC, POP, P_CaCO3, P_CaCO3_ALT_CO2, &
-            P_SiO2, dust, P_iron, PON_remin(k), PON_sed_loss(k),         &
-            QA_dust_def(k), temperature(k),                              &
-            tracer_local(:, k), carbonate(k), sed_denitrif(k),           &
-            other_remin(k), fesedflux(k), marbl_tracer_indices,          &
+       call marbl_compute_particulate_terms(k, domain, marbl_tracer_indices, &
+            lcompute_bottom_co3_partial_derivs,                              &
+            temperature(k), tracer_local(:, k), carbonate(k), fesedflux(k),  &
+            d_bottom_CO3_d_DIC, d_bottom_CO3_d_ALK,                          &
+            marbl_particulate_share, POC, POP, P_CaCO3, P_CaCO3_ALT_CO2,     &
+            P_SiO2, dust, P_iron, QA_dust_def(k),                            &
+            d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK,          &
+            sed_denitrif(k), other_remin(k), PON_remin(k), PON_sed_loss(k),  &
             glo_avg_fields_interior, marbl_status_log)
 
        if (marbl_status_log%labort_marbl) then
@@ -1246,6 +1262,7 @@ contains
          Lig_prod, Lig_loss, Lig_scavenge, Fefree,          &
          Lig_photochem, Lig_deg,                            &
          interior_restore,                                  &
+         d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK, &
          interior_forcing_diags, &
          marbl_status_log)
     if (marbl_status_log%labort_marbl) then
@@ -1460,12 +1477,15 @@ contains
 
   !***********************************************************************
 
-  subroutine marbl_compute_particulate_terms(k, domain,                       &
+  subroutine marbl_compute_particulate_terms(k, domain, marbl_tracer_indices, &
+             lcompute_bottom_co3_partial_derivs,                              &
+             temperature, tracer_local, carbonate, fesedflux,                 &
+             d_bottom_CO3_d_DIC, d_bottom_CO3_d_ALK,                          &
              marbl_particulate_share, POC, POP, P_CaCO3, P_CaCO3_ALT_CO2,     &
-             P_SiO2, dust, P_iron, PON_remin, PON_sed_loss, QA_dust_def,      &
-             temperature, tracer_local, carbonate, sed_denitrif, other_remin, &
-             fesedflux, marbl_tracer_indices, glo_avg_fields_interior,        &
-             marbl_status_log)
+             P_SiO2, dust, P_iron, QA_dust_def,                               &
+             d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK,          &
+             sed_denitrif, other_remin, PON_remin, PON_sed_loss,              &
+             glo_avg_fields_interior, marbl_status_log)
 
     !  Compute outgoing fluxes and remineralization terms. Assumes that
     !  production terms have been set. Incoming fluxes are assumed to be the
@@ -1516,17 +1536,21 @@ contains
     ! !USES:
 
     use marbl_constants_mod, only : Tref
+    use marbl_constants_mod, only : p25
     use marbl_parms        , only : parm_Fe_desorption_rate0
     use marbl_parms        , only : parm_sed_denitrif_coeff
 
     integer (int_kind)                      , intent(in)    :: k                   ! vertical model level
     type(marbl_domain_type)                 , intent(in)    :: domain
+    type(marbl_tracer_index_type)           , intent(in)    :: marbl_tracer_indices
+    logical(log_kind)                       , intent(in)    :: lcompute_bottom_co3_partial_derivs
     real (r8)                               , intent(in)    :: temperature         ! temperature for scaling functions bsi%diss
-    real (r8), dimension(ecosys_base_tracer_cnt) , intent(in)    :: tracer_local        ! local copies of model tracer concentrations
+    real (r8), dimension(ecosys_base_tracer_cnt) , intent(in) :: tracer_local        ! local copies of model tracer concentrations
     type(carbonate_type)                    , intent(in)    :: carbonate
-    real(r8)                                , intent(in)    :: fesedflux           ! sedimentary Fe input
-    real(r8)                                , intent(out)   :: PON_remin           ! remin of PON
-    real(r8)                                , intent(out)   :: PON_sed_loss        ! loss of PON to sediments
+    real (r8)                               , intent(in)    :: fesedflux           ! sedimentary Fe input
+    real (r8)                               , intent(in)    :: d_bottom_CO3_d_DIC
+    real (r8)                               , intent(in)    :: d_bottom_CO3_d_ALK
+    type(marbl_particulate_share_type)      , intent(inout) :: marbl_particulate_share
     type(column_sinking_particle_type)      , intent(inout) :: POC                 ! base units = nmol C
     type(column_sinking_particle_type)      , intent(inout) :: POP                 ! base units = nmol P
     type(column_sinking_particle_type)      , intent(inout) :: P_CaCO3             ! base units = nmol CaCO3
@@ -1535,10 +1559,12 @@ contains
     type(column_sinking_particle_type)      , intent(inout) :: dust                ! base units = g
     type(column_sinking_particle_type)      , intent(inout) :: P_iron              ! base units = nmol Fe
     real (r8)                               , intent(inout) :: QA_dust_def         ! incoming deficit in the QA(dust) POC flux
+    real (r8)                               , intent(inout) :: d_bottom_CaCO3_remin_d_DIC
+    real (r8)                               , intent(inout) :: d_bottom_CaCO3_remin_d_ALK
     real (r8)                               , intent(out)   :: sed_denitrif        ! sedimentary denitrification (umolN/cm^2/s)
     real (r8)                               , intent(out)   :: other_remin         ! sedimentary remin not due to oxic or denitrification
-    type(marbl_particulate_share_type)      , intent(inout) :: marbl_particulate_share
-    type(marbl_tracer_index_type)           , intent(in)    :: marbl_tracer_indices
+    real (r8)                               , intent(out)   :: PON_remin           ! remin of PON
+    real (r8)                               , intent(out)   :: PON_sed_loss        ! loss of PON to sediments
     real (r8)                               , intent(inout) :: glo_avg_fields_interior(:)
     type(marbl_log_type)                    , intent(inout) :: marbl_status_log
 
@@ -1572,6 +1598,10 @@ contains
          flux_POP,           & ! temp variables used to update sinking flux
          bury_frac,          & ! fraction of flux hitting floor that gets buried
          dz_loc, dzr_loc       ! dz, dzr at a particular i, j location
+
+    real (r8) :: &
+         CaCO3_sed_loss_DIC_pos, CaCO3_sed_loss_DIC_neg, d_CaCO3_sed_loss_d_DIC, &
+         CaCO3_sed_loss_ALK_pos, CaCO3_sed_loss_ALK_neg, d_CaCO3_sed_loss_d_ALK
 
     real (r8), parameter :: &  ! o2_sf is an abbreviation for o2_scalefactor
          o2_sf_o2_range_hi = 45.0_r8, & ! apply o2_scalefactor for O2_loc less than this
@@ -2036,9 +2066,45 @@ contains
              P_CaCO3%sed_loss(k)         = P_CaCO3%sflux_out(k)         + P_CaCO3%hflux_out(k)
              P_CaCO3_ALT_CO2%sed_loss(k) = P_CaCO3_ALT_CO2%sflux_out(k) + P_CaCO3_ALT_CO2%hflux_out(k)
           endif
+          d_bottom_CaCO3_remin_d_DIC = c0
+          d_bottom_CaCO3_remin_d_ALK = c0
        else ! caco3_bury_thres_iopt = caco3_bury_thres_iopt_omega_calc
+          flux = P_CaCO3%sflux_out(k) + P_CaCO3%hflux_out(k)
           if (carbonate%CO3 > carbonate%CO3_sat_calcite) then
-             P_CaCO3%sed_loss(k) = P_CaCO3%sflux_out(k) + P_CaCO3%hflux_out(k)
+             P_CaCO3%sed_loss(k) = flux
+          endif
+          ! if flux == 0 then derivative of CaCO3_remin == 0, so don't bother computing it
+          if (lcompute_bottom_co3_partial_derivs .and. flux > c0) then
+             ! compute approximation to partial derivatives over wider DIC and ALK intervals,
+             !   in order to smooth out discontinuity of step function
+             if (carbonate%CO3 + c2 * d_bottom_CO3_d_DIC > carbonate%CO3_sat_calcite) then
+                CaCO3_sed_loss_DIC_pos = flux
+             else
+                CaCO3_sed_loss_DIC_pos = c0
+             endif
+             if (carbonate%CO3 - c2 * d_bottom_CO3_d_DIC > carbonate%CO3_sat_calcite) then
+                CaCO3_sed_loss_DIC_neg = flux
+             else
+                CaCO3_sed_loss_DIC_neg = c0
+             endif
+             d_CaCO3_sed_loss_d_DIC = p25 * (CaCO3_sed_loss_DIC_pos - CaCO3_sed_loss_DIC_neg)
+             d_bottom_CaCO3_remin_d_DIC = -d_CaCO3_sed_loss_d_DIC * dzr_loc
+
+             if (carbonate%CO3 + c2 * d_bottom_CO3_d_ALK > carbonate%CO3_sat_calcite) then
+                CaCO3_sed_loss_ALK_pos = flux
+             else
+                CaCO3_sed_loss_ALK_pos = c0
+             endif
+             if (carbonate%CO3 - c2 * d_bottom_CO3_d_ALK > carbonate%CO3_sat_calcite) then
+                CaCO3_sed_loss_ALK_neg = flux
+             else
+                CaCO3_sed_loss_ALK_neg = c0
+             endif
+             d_CaCO3_sed_loss_d_ALK = p25 * (CaCO3_sed_loss_ALK_pos - CaCO3_sed_loss_ALK_neg)
+             d_bottom_CaCO3_remin_d_ALK = -d_CaCO3_sed_loss_d_ALK * dzr_loc
+          else
+             d_bottom_CaCO3_remin_d_DIC = c0
+             d_bottom_CaCO3_remin_d_ALK = c0
           endif
           if (carbonate%CO3_ALT_CO2 > carbonate%CO3_sat_calcite) then
              P_CaCO3_ALT_CO2%sed_loss(k) = P_CaCO3_ALT_CO2%sflux_out(k) + P_CaCO3_ALT_CO2%hflux_out(k)
@@ -3449,9 +3515,10 @@ contains
 
   !***********************************************************************
 
-  subroutine marbl_compute_carbonate_chemistry(domain, temperature, press_bar, &
-       salinity, tracer_local, marbl_tracer_indices, carbonate, ph_prev_col,   &
-       ph_prev_alt_co2_col, zsat_calcite, zsat_aragonite, marbl_status_log)
+  subroutine marbl_compute_carbonate_chemistry(domain, lcompute_bottom_co3_partial_derivs, &
+       temperature, press_bar, salinity, tracer_local, marbl_tracer_indices, &
+       ph_prev_col, ph_prev_alt_co2_col, carbonate, &
+       d_bottom_CO3_d_DIC, d_bottom_CO3_d_ALK, marbl_status_log)
 
     use marbl_co2calc_mod, only : marbl_co2calc_state_set
     use marbl_co2calc_mod, only : marbl_co2calc_state_set_dic
@@ -3462,16 +3529,17 @@ contains
     use marbl_co2calc_mod, only : co2calc_state_type
 
     type(marbl_domain_type)                 , intent(in)    :: domain
+    logical(log_kind)                       , intent(in)    :: lcompute_bottom_co3_partial_derivs
     real (r8)                               , intent(in)    :: temperature(:)
     real (r8)                               , intent(in)    :: press_bar(:)
     real (r8)                               , intent(in)    :: salinity(:)
     real (r8)                               , intent(in)    :: tracer_local(ecosys_base_tracer_cnt,domain%km) ! local copies of model tracer concentrations
     type(marbl_tracer_index_type)           , intent(in)    :: marbl_tracer_indices
-    type(carbonate_type)                    , intent(out)   :: carbonate(domain%km)
     real(r8)                                , intent(inout) :: ph_prev_col(domain%km)
     real(r8)                                , intent(inout) :: ph_prev_alt_co2_col(domain%km)
-    real(r8)                                , intent(inout) :: zsat_calcite(domain%km)                   ! Calcite Saturation Depth
-    real(r8)                                , intent(inout) :: zsat_aragonite(domain%km)                 ! Aragonite Saturation Depth
+    type(carbonate_type)                    , intent(out)   :: carbonate(domain%km)
+    real(r8)                                , intent(out)   :: d_bottom_CO3_d_DIC
+    real(r8)                                , intent(out)   :: d_bottom_CO3_d_ALK
     type(marbl_log_type)                    , intent(inout) :: marbl_status_log
 
     !-----------------------------------------------------------------------
@@ -3491,6 +3559,29 @@ contains
     real(r8)                 , dimension(domain%km) :: alk_alt_co2_loc
     real(r8)                 , dimension(domain%km) :: po4_loc
     real(r8)                 , dimension(domain%km) :: sio3_loc
+
+    !-----------------------------------------------------------------------
+    ! vars to compute d_bottom_CO3 terms, fin_diff_array_len is 4,
+    !   in order to compute 2 separate 2nd order centered finite difference approximations
+    !-----------------------------------------------------------------------
+    integer(int_kind), parameter :: fin_diff_array_len = 4
+    logical(log_kind)        , dimension(fin_diff_array_len) :: bottom_pressure_correct
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_temperature
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_salinity
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_press_bar
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_dic
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_alk
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_po4
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_sio3
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_ph_lower_bound
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_ph_upper_bound
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_ph
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_h2co3
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_hco3
+    real(r8)                 , dimension(fin_diff_array_len) :: bottom_co3
+    type(co2calc_coeffs_type), dimension(fin_diff_array_len) :: bottom_co2calc_coeffs
+    type(co2calc_state_type) , dimension(fin_diff_array_len) :: bottom_co2calc_state
+
     !-----------------------------------------------------------------------
 
     ! make local copies instead of using associate construct because of gnu fortran bug
@@ -3520,6 +3611,11 @@ contains
 
     pressure_correct = .TRUE.
     pressure_correct(1) = .FALSE.
+
+    !-----------------------------------------------------------------------
+    ! compute carbonate terms for dic and alk values
+    !-----------------------------------------------------------------------
+
     do k=1,dkm
 
        if (ph_prev_col(k)  /= c0) then
@@ -3553,6 +3649,74 @@ contains
       call marbl_status_log%log_error_trace('marbl_comp_CO3terms()', subname)
       return
     end if
+
+    !-----------------------------------------------------------------------
+    ! compute d_bottom_CO3 terms
+    !-----------------------------------------------------------------------
+
+    if (lcompute_bottom_co3_partial_derivs) then
+      bottom_pressure_correct(:) = pressure_correct(column_kmt)
+
+      bottom_temperature(:)      = temperature(column_kmt)
+      bottom_salinity(:)         = salinity(column_kmt)
+      bottom_press_bar(:)        = press_bar(column_kmt)
+      bottom_dic(:)              = dic_loc(column_kmt)
+      bottom_alk(:)              = alk_loc(column_kmt)
+      bottom_po4(:)              = po4_loc(column_kmt)
+      bottom_sio3(:)             = sio3_loc(column_kmt)
+
+      ! entries 1:2 are for 2nd order centered finite difference approximation wrt dic
+      bottom_dic(1)              = dic_loc(column_kmt) + 0.5_r8
+      bottom_dic(2)              = dic_loc(column_kmt) - 0.5_r8
+
+      ! entries 3:4 are for 2nd order centered finite difference approximation wrt alk
+      bottom_alk(3)              = alk_loc(column_kmt) + 0.5_r8
+      bottom_alk(4)              = alk_loc(column_kmt) - 0.5_r8
+
+      call marbl_co2calc_state_set( &
+           num_elements        = fin_diff_array_len, &
+           num_active_elements = fin_diff_array_len, &
+           temp                = bottom_temperature, &
+           salt                = bottom_salinity, &
+           sw_press_bar        = bottom_press_bar, &
+           dic                 = bottom_dic(:), &
+           ta                  = bottom_alk(:), &
+           pt                  = bottom_po4(:), &
+           sit                 = bottom_sio3(:), &
+           co2calc_state       = bottom_co2calc_state)
+
+      bottom_ph_lower_bound(:)   = ph(column_kmt) - del_ph
+      bottom_ph_upper_bound(:)   = ph(column_kmt) + del_ph
+      bottom_co2calc_coeffs(:)   = co2calc_coeffs(column_kmt)
+
+      call marbl_comp_CO3terms( &
+           fin_diff_array_len, fin_diff_array_len, bottom_pressure_correct, .false., &
+           bottom_co2calc_state, bottom_ph_lower_bound, bottom_ph_upper_bound, bottom_co2calc_coeffs, &
+           bottom_ph, bottom_h2co3, bottom_hco3, bottom_co3, marbl_status_log)
+
+      if (marbl_status_log%labort_marbl) then
+        call marbl_status_log%log_error_trace('marbl_comp_CO3terms()', subname)
+        return
+      end if
+
+      ! entries 1:2 are for 2nd order centered finite difference approximation wrt dic
+      ! 2*delta DIC = 1.0, so division is unnecessary
+      d_bottom_CO3_d_DIC = (bottom_co3(1) - bottom_co3(2))
+
+      ! entries 3:4 are for 2nd order centered finite difference approximation wrt alk
+      ! 2*delta ALK = 1.0, so division is unnecessary
+      d_bottom_CO3_d_ALK = (bottom_co3(3) - bottom_co3(4))
+
+    else
+
+      d_bottom_CO3_d_DIC = c0
+      d_bottom_CO3_d_ALK = c0
+
+    end if
+
+    !-----------------------------------------------------------------------
+    ! compute carbonate terms for dic_alt_co2 and alk_alt_co2 values
+    !-----------------------------------------------------------------------
 
     do k=1,dkm
 
