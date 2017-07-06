@@ -2385,8 +2385,8 @@ contains
 
          piston_velocity      => surface_forcing_internal%piston_velocity(:),                       &
          flux_co2             => surface_forcing_internal%flux_co2(:),                              &
-         d_flux_co2_d_dic     => surface_forcing_internal%d_flux_co2_d_dic(:),                      &
-         d_flux_co2_d_alk     => surface_forcing_internal%d_flux_co2_d_alk(:),                      &
+         d_sf_dic_d_dic       => surface_forcing_internal%d_sf_dic_d_dic(:),                        &
+         d_sf_dic_d_alk       => surface_forcing_internal%d_sf_dic_d_alk(:),                        &
          co2star              => surface_forcing_internal%co2star(:),                               &
          dco2star             => surface_forcing_internal%dco2star(:),                              &
          pco2surf             => surface_forcing_internal%pco2surf(:),                              &
@@ -2550,7 +2550,7 @@ contains
             surface_forcing_output%sfo(sfo_ind%flux_co2_id)%forcing_field = flux_co2
           end if
 
-          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_DIC_GAS_FLUX_d_DIC)%compute_now) then
+          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_SF_DIC_d_DIC)%compute_now) then
              ! centered finite difference approximation
 
              call marbl_co2calc_state_set_dic( &
@@ -2616,10 +2616,10 @@ contains
                   dic                 = surface_vals(:,dic_ind), &
                   co2calc_state       = co2calc_state)
 
-             d_flux_co2_d_dic(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
+             d_sf_dic_d_dic(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
           end if
 
-          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_DIC_GAS_FLUX_d_ALK)%compute_now) then
+          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_SF_DIC_d_ALK)%compute_now) then
              ! centered finite difference approximation
 
              call marbl_co2calc_state_set_ta( &
@@ -2685,7 +2685,7 @@ contains
                   ta                  = surface_vals(:,alk_ind), &
                   co2calc_state       = co2calc_state)
 
-             d_flux_co2_d_alk(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
+             d_sf_dic_d_alk(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
           end if
  
           !-------------------------------------------------------------------

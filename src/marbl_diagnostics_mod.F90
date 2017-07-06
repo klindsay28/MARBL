@@ -307,8 +307,8 @@ module marbl_diagnostics_mod
      integer(int_kind) :: PV_CO2
      integer(int_kind) :: SCHMIDT_CO2
      integer(int_kind) :: DIC_GAS_FLUX
-     integer(int_kind) :: d_DIC_GAS_FLUX_d_DIC
-     integer(int_kind) :: d_DIC_GAS_FLUX_d_ALK
+     integer(int_kind) :: d_SF_DIC_d_DIC
+     integer(int_kind) :: d_SF_DIC_d_ALK
      integer(int_kind) :: PH
      integer(int_kind) :: ATM_CO2
      integer(int_kind) :: CO2STAR_ALT_CO2
@@ -562,25 +562,25 @@ contains
         return
       end if
 
-      lname    = 'd_FG_CO2_d_DIC'
-      sname    = 'd_FG_CO2_d_DIC'
+      lname    = 'd_SF_DIC_d_DIC'
+      sname    = 'd_SF_DIC_d_DIC'
       units    = 'cm/s'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%d_DIC_GAS_FLUX_d_DIC, marbl_status_log)
+           ind%d_SF_DIC_d_DIC, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
       end if
 
-      lname    = 'd_FG_CO2_d_ALK'
-      sname    = 'd_FG_CO2_d_ALK'
+      lname    = 'd_SF_DIC_d_ALK'
+      sname    = 'd_SF_DIC_d_ALK'
       units    = 'cm/s'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%d_DIC_GAS_FLUX_d_ALK, marbl_status_log)
+           ind%d_SF_DIC_d_ALK, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
@@ -3484,8 +3484,8 @@ contains
 
          piston_velocity   => surface_forcing_internal%piston_velocity,                         &
          flux_co2          => surface_forcing_internal%flux_co2,                                &
-         d_flux_co2_d_dic  => surface_forcing_internal%d_flux_co2_d_dic,                        &
-         d_flux_co2_d_alk  => surface_forcing_internal%d_flux_co2_d_alk,                        &
+         d_sf_dic_d_dic    => surface_forcing_internal%d_sf_dic_d_dic,                          &
+         d_sf_dic_d_alk    => surface_forcing_internal%d_sf_dic_d_alk,                          &
          flux_alt_co2      => surface_forcing_internal%flux_alt_co2,                            &
          co2star           => surface_forcing_internal%co2star,                                 &
          dco2star          => surface_forcing_internal%dco2star,                                &
@@ -3560,10 +3560,10 @@ contains
        diags(ind_diag%PV_CO2)%field_2d(:)               = pv_co2(:)
        diags(ind_diag%SCHMIDT_CO2)%field_2d(:)          = schmidt_co2(:)
        diags(ind_diag%DIC_GAS_FLUX)%field_2d(:)         = flux_co2(:)
-       if (diags(ind_diag%d_DIC_GAS_FLUX_d_DIC)%compute_now) &
-          diags(ind_diag%d_DIC_GAS_FLUX_d_DIC)%field_2d(:) = d_flux_co2_d_dic(:)
-       if (diags(ind_diag%d_DIC_GAS_FLUX_d_ALK)%compute_now) &
-          diags(ind_diag%d_DIC_GAS_FLUX_d_ALK)%field_2d(:) = d_flux_co2_d_alk(:)
+       if (diags(ind_diag%d_SF_DIC_d_DIC)%compute_now) &
+          diags(ind_diag%d_SF_DIC_d_DIC)%field_2d(:) = d_sf_dic_d_dic(:)
+       if (diags(ind_diag%d_SF_DIC_d_ALK)%compute_now) &
+          diags(ind_diag%d_SF_DIC_d_ALK)%field_2d(:) = d_sf_dic_d_alk(:)
        diags(ind_diag%PH)%field_2d(:)                   = ph_prev(:)
        diags(ind_diag%ATM_CO2)%field_2d(:)              = xco2(:)
 
