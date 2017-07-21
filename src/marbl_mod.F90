@@ -3611,6 +3611,7 @@ contains
 
     pressure_correct = .TRUE.
     pressure_correct(1) = .FALSE.
+    pressure_correct(column_kmt+1:dkm) = .FALSE.
 
     !-----------------------------------------------------------------------
     ! compute carbonate terms for dic and alk values

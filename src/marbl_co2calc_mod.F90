@@ -198,6 +198,12 @@ contains
       co2calc_state_per_mass(c)%sit          = max(co2calc_state_in(c)%sit,c0)      * vol_to_mass
     end do
 
+    ! FIXME : remove this once comp_co2calc_coeffs only operates on 1:num_active_elements
+    do c = num_active_elements+1, num_elements
+      co2calc_state_per_mass(c)%temp         = c0
+      co2calc_state_per_mass(c)%salt         = c0
+    end do
+
   end subroutine comp_per_mass_co2calc_state
 
   !*****************************************************************************
@@ -386,6 +392,7 @@ contains
     !------------------------------------------------------------------------
 
     if (lcomp_co2calc_coeffs) then
+       ! FIXME : pass in num_active_elements and only compute on 1:num_active_elements
        call comp_co2calc_coeffs(num_elements, pressure_correct, &
                                 co2calc_state_per_mass, co2calc_coeffs)
     end if
