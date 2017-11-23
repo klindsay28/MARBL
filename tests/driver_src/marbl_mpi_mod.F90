@@ -20,6 +20,7 @@ module marbl_mpi_mod
 
   integer :: my_task
   integer :: num_tasks
+  logical :: marbl_mpi_return_error = .true.
 
   interface marbl_mpi_send
     module procedure marbl_mpi_send_dbl
@@ -31,6 +32,8 @@ module marbl_mpi_mod
 
   interface marbl_mpi_bcast
     module procedure marbl_mpi_bcast_str
+    module procedure marbl_mpi_bcast_logical
+    module procedure marbl_mpi_bcast_integer
   end interface marbl_mpi_bcast
 
   !****************************************************************************
@@ -54,6 +57,17 @@ contains
 
   end subroutine marbl_mpi_init
 
+  !****************************************************************************
+
+  subroutine marbl_mpi_barrier()
+
+#ifdef MARBL_WITH_MPI
+    integer :: ierr
+
+    call MPI_Barrier(MPI_COMM_WORLD, ierr)
+#endif
+
+  end subroutine marbl_mpi_barrier
   !****************************************************************************
 
   subroutine marbl_mpi_finalize()
@@ -125,15 +139,54 @@ contains
 
   !****************************************************************************
 
+  subroutine marbl_mpi_bcast_logical(logical_to_bcast, root_task)
+
+    logical, intent(inout) :: logical_to_bcast
+    integer, intent(in)    :: root_task
+
+    integer :: ierr
+
+#ifdef MARBL_WITH_MPI
+    call MPI_Bcast(logical_to_bcast, 1, MPI_LOGICAL, root_task, &
+                   MPI_COMM_WORLD, ierr)
+#else
+    ! Avoid an empty subroutien when no MPI
+    ierr = root_task
+#endif
+
+  end subroutine marbl_mpi_bcast_logical
+
+  !****************************************************************************
+
+  subroutine marbl_mpi_bcast_integer(int_to_bcast, root_task)
+
+    integer, intent(inout) :: int_to_bcast
+    integer, intent(in)    :: root_task
+
+    integer :: ierr
+
+#ifdef MARBL_WITH_MPI
+    call MPI_Bcast(int_to_bcast, 1, MPI_INTEGER, root_task, &
+                   MPI_COMM_WORLD, ierr)
+#else
+    ! Avoid an empty subroutien when no MPI
+    ierr = root_task
+#endif
+
+  end subroutine marbl_mpi_bcast_integer
+
+  !****************************************************************************
+
   subroutine marbl_mpi_abort()
 
 #ifdef MARBL_WITH_MPI
     integer :: ierr
 
-    call MPI_Abort(MPI_COMM_WORLD, ierr)
-#else
-    stop 1
+    call marbl_mpi_barrier()
+    call marbl_mpi_finalize()
 #endif
+    if (marbl_mpi_return_error) stop 1
+    stop
 
   !****************************************************************************
 

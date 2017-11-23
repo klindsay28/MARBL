@@ -8,8 +8,8 @@ from marbl_testing_class import MARBL_testcase
 
 mt = MARBL_testcase()
 
-mt.parse_args(desc='Run full MARBL setup (config, init, and complete) and print '
-                   'list of all requested surfacing forcing fields')
+mt.parse_args(desc='Unit tests for all the functions / routines in '
+                   'marbl_utils_mod.F90', HaveInputFile=False)
 
 mt.build_exe()
 

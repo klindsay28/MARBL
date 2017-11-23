@@ -1,29 +1,30 @@
 import sys
 import machines as machs
+import os
 from os import system as sh_command
 
 class MARBL_testcase(object):
 
   def __init__(self):
-    from os import path
-
     # supported_compilers is public, needed by the build tests
     self.supported_compilers = []
 
     # all other variables are private
+    self._module_names = {}
     self._compiler = None
     self._machine = None
     self._hostname = None
-    self._namelistfile = 'marbl_in'
+    self._namelist_file = None
+    self._input_file = None
     self._mpitasks = 0
-    self._marbl_dir = path.abspath('%s/../..' % path.dirname(__file__))
+    self._marbl_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
   # -----------------------------------------------
 
   # Parse the arguments to the MARBL test script
-  # Some tests will let you specify a compiler and / or namelist
+  # Some tests will let you specify a compiler and / or input file
   # Some tests will require you to specify a machine
-  def parse_args(self, desc, HaveCompiler=True, HaveNamelist=True,
+  def parse_args(self, desc, HaveCompiler=True, HaveInputFile=True,
                  CleanLibOnly=False):
 
     import argparse
@@ -33,9 +34,9 @@ class MARBL_testcase(object):
       parser.add_argument('-c', '--compiler', action='store',
                           dest='compiler', help='compiler to build with')
 
-    if HaveNamelist:
-      parser.add_argument('-n', '--namelist', action='store', dest='namelistfile',
-                          help='namelist file to read', default='marbl_in')
+    if HaveInputFile:
+      parser.add_argument('-i', '--input_file', action='store', dest='input_file',
+                          default=None, help='input file to read')
 
     if CleanLibOnly:
       parser.add_argument('--clean', action='store_true',
@@ -49,6 +50,9 @@ class MARBL_testcase(object):
 
     parser.add_argument('--mpitasks', action='store', dest='mpitasks',
                         default=0, help='Number of MPI tasks (default: 0 => no MPI)')
+
+    parser.add_argument('-n', '--namelist_file', action='store', dest='namelist_file',
+                        default='test.nml', help='namelist file for the marbl standalone driver')
 
     args = parser.parse_args()
 
@@ -77,7 +81,7 @@ class MARBL_testcase(object):
         found = False
         print 'No machine specified and %s is not recognized' % self._hostname
         print 'This test will assume you are not running on a supported cluster'
-        self._machine = 'local-gnu'
+        self._machine = 'local'
 
       if found:
         print 'No machine specified, but it looks like you are running on %s' % self._machine
@@ -87,8 +91,8 @@ class MARBL_testcase(object):
       self._machine = args.mach
       print 'Running test on %s' % self._machine
 
-    machs.machine_specific(self._machine, self.supported_compilers)
-    
+    machs.machine_specific(self._machine, self.supported_compilers, self._module_names)
+
     if HaveCompiler:
       self._compiler = args.compiler
       if self._compiler == None:
@@ -97,9 +101,10 @@ class MARBL_testcase(object):
       else:
         print 'Testing with %s' % self._compiler
 
-    if HaveNamelist:
-      self._namelistfile = args.namelistfile
+    if HaveInputFile:
+      self._input_file = args.input_file
 
+    self._namelist_file = args.namelist_file
     self._mpitasks = int(args.mpitasks)
     print '----'
     sys.stdout.flush()
@@ -119,10 +124,10 @@ class MARBL_testcase(object):
     if loc_compiler == None:
       loc_compiler = self._compiler
 
-    src_dir = '%s/src' % self._marbl_dir
+    src_dir = os.path.join(self._marbl_dir, 'src')
 
-    if self._machine not in ['local-gnu','local-pgi']:
-      machs.load_module(self._machine, loc_compiler)
+    if self._machine != 'local':
+      machs.load_module(self._machine, loc_compiler, self._module_names[loc_compiler])
 
     makecmd = 'make %s' % loc_compiler
     if self._mpitasks > 0:
@@ -137,10 +142,10 @@ class MARBL_testcase(object):
     if loc_compiler == None:
       loc_compiler = self._compiler
 
-    drv_dir = '%s/tests/driver_src' % self._marbl_dir
+    drv_dir = os.path.join(self._marbl_dir, 'tests', 'driver_src')
 
-    if self._machine not in ['local-gnu','local-pgi']:
-      machs.load_module(self._machine, loc_compiler)
+    if self._machine != 'local':
+      machs.load_module(self._machine, loc_compiler, self._module_names[loc_compiler])
 
     makecmd = 'make %s' % loc_compiler
     if self._mpitasks > 0:
@@ -152,10 +157,16 @@ class MARBL_testcase(object):
   # Execute marbl.exe
   def run_exe(self):
 
-    exe_dir = '%s/tests/driver_exe' % self._marbl_dir
+    # build the executable command string
+    execmd = os.path.join(self._marbl_dir, 'tests', 'driver_exe') + os.sep
 
+    # if running in parallel, executable is marbl-mpi.exe
     if self._mpitasks > 0:
-      execmd = '%s/marbl-mpi.exe < %s' % (exe_dir, self._namelistfile)
+      execmd += "marbl-mpi.exe"
+
+      # need to launch with mpirun
+      # Note that yellowstone actually uses mpirun.lsf
+      # (and we want to avoid running on a login node)
       if self._machine == 'yellowstone':
         execmd = 'mpirun.lsf %s' % execmd
         if 'yslogin' in self._hostname:
@@ -163,8 +174,19 @@ class MARBL_testcase(object):
           execmd = 'execca %s' % execmd
       else:
         execmd = 'mpirun -n %d %s' % (self._mpitasks, execmd)
+
+    # if running in serial, executable is marbl.exe
     else:
-      execmd = '%s/marbl.exe < %s' % (exe_dir, self._namelistfile)
+      execmd += "marbl.exe"
+
+    # First argument is the file containing &marbl_driver_nml namelist
+    execmd += " -n %s" % self._namelist_file
+
+    # If an input file was specified, it should be the second argument
+    if self._input_file != None:
+      execmd += " -i %s" % self._input_file
+
+    # Log executable command
     print "Running following command:"
     print execmd
     print ''
@@ -178,7 +200,7 @@ class MARBL_testcase(object):
   # clean libmarbl.a
   def _clean_lib(self):
 
-    src_dir = '%s/src' % self._marbl_dir
+    src_dir = os.path.join(self._marbl_dir, 'src')
     sh_command('cd %s; make clean' % src_dir)
 
   # -----------------------------------------------
@@ -186,6 +208,6 @@ class MARBL_testcase(object):
   # Clean marbl.exe
   def _clean_exe(self):
 
-    drv_dir = '%s/tests/driver_src' % self._marbl_dir
+    drv_dir = os.path.join(self._marbl_dir, 'tests', 'driver_src')
     sh_command('cd %s; make clean' % drv_dir)
 
