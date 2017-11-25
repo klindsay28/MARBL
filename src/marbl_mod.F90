@@ -500,7 +500,7 @@ contains
     integer (int_kind) :: n         ! tracer index
     integer (int_kind) :: k         ! vertical level index
 
-    logical(log_kind) :: lcompute_bottom_co3_partial_derivs
+    logical(log_kind) :: lcompute_bottom_co3_alt_co2_partial_derivs
 
     real (r8) :: O2_production(domain%km)    ! O2 production
     real (r8) :: O2_consumption(domain%km)   ! O2 consumption
@@ -532,11 +532,11 @@ contains
 
     ! FIXME : move these scalar quantities into carbonate_type
     !   after depth dimension is moved into existing components of carbonate_type
-    real(r8)                                 :: d_bottom_CO3_d_DIC
-    real(r8)                                 :: d_bottom_CO3_d_ALK
+    real(r8)                                 :: d_bottom_CO3_ALT_CO2_d_DIC_ALT_CO2
+    real(r8)                                 :: d_bottom_CO3_ALT_CO2_d_ALK_ALT_CO2
 
-    real(r8)                                 :: d_bottom_CaCO3_remin_d_DIC
-    real(r8)                                 :: d_bottom_CaCO3_remin_d_ALK
+    real(r8)                                 :: d_bottom_CaCO3_ALT_CO2_remin_d_DIC_ALT_CO2
+    real(r8)                                 :: d_bottom_CaCO3_ALT_CO2_remin_d_ALK_ALT_CO2
 
     ! NOTE(bja, 2015-07) vectorization: arrays that are (n, k, c, i)
     ! probably can not be vectorized reasonably over c without memory
@@ -622,17 +622,17 @@ contains
     call marbl_init_particulate_terms(1, surface_forcing_indices, &
          POC, POP, P_CaCO3, P_CaCO3_ALT_CO2, P_SiO2, dust, P_iron, QA_dust_def(:), dust_flux_in)
 
-    lcompute_bottom_co3_partial_derivs = &
-      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_DIC_d_DIC)%compute_now .or. &
-      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_DIC_d_ALK)%compute_now .or. &
-      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_ALK_d_DIC)%compute_now .or. &
-      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_ALK_d_ALK)%compute_now
+    lcompute_bottom_co3_alt_co2_partial_derivs = &
+      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_DIC_ALT_CO2_d_DIC_ALT_CO2)%compute_now .or. &
+      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_DIC_ALT_CO2_d_ALK_ALT_CO2)%compute_now .or. &
+      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_ALK_ALT_CO2_d_DIC_ALT_CO2)%compute_now .or. &
+      interior_forcing_diags%diags(marbl_interior_diag_ind%d_bottom_J_ALK_ALT_CO2_d_ALK_ALT_CO2)%compute_now
 
     call marbl_timers%start(marbl_timer_indices%carbonate_chem_id, marbl_status_log)
-    call marbl_compute_carbonate_chemistry(domain, lcompute_bottom_co3_partial_derivs, &
+    call marbl_compute_carbonate_chemistry(domain, lcompute_bottom_co3_alt_co2_partial_derivs, &
          temperature, pressure, salinity, tracer_local(:, :), marbl_tracer_indices,    &
          ph_prev_col(:), ph_prev_alt_co2_col(:), carbonate(:),                         &
-         d_bottom_CO3_d_DIC, d_bottom_CO3_d_ALK, marbl_status_log)
+         d_bottom_CO3_ALT_CO2_d_DIC_ALT_CO2, d_bottom_CO3_ALT_CO2_d_ALK_ALT_CO2, marbl_status_log)
     call marbl_timers%stop(marbl_timer_indices%carbonate_chem_id, marbl_status_log)
 
     if (marbl_status_log%labort_marbl) then
@@ -716,12 +716,12 @@ contains
        ! FIXME #28: need to pull particulate share out
        !            of compute_particulate_terms!
        call marbl_compute_particulate_terms(k, domain, marbl_tracer_indices, &
-            lcompute_bottom_co3_partial_derivs,                              &
+            lcompute_bottom_co3_alt_co2_partial_derivs,                              &
             temperature(k), tracer_local(:, k), carbonate(k), fesedflux(k),  &
-            d_bottom_CO3_d_DIC, d_bottom_CO3_d_ALK,                          &
+            d_bottom_CO3_ALT_CO2_d_DIC_ALT_CO2, d_bottom_CO3_ALT_CO2_d_ALK_ALT_CO2,                          &
             marbl_particulate_share, POC, POP, P_CaCO3, P_CaCO3_ALT_CO2,     &
             P_SiO2, dust, P_iron, QA_dust_def(k),                            &
-            d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK,          &
+            d_bottom_CaCO3_ALT_CO2_remin_d_DIC_ALT_CO2, d_bottom_CaCO3_ALT_CO2_remin_d_ALK_ALT_CO2,          &
             sed_denitrif(k), other_remin(k), PON_remin(k), PON_sed_loss(k),  &
             glo_avg_fields_interior, marbl_status_log)
 
@@ -807,7 +807,7 @@ contains
          Lig_prod, Lig_loss, Lig_scavenge, Fefree,          &
          Lig_photochem, Lig_deg,                            &
          interior_restore,                                  &
-         d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK, &
+         d_bottom_CaCO3_ALT_CO2_remin_d_DIC_ALT_CO2, d_bottom_CaCO3_ALT_CO2_remin_d_ALK_ALT_CO2, &
          interior_forcing_diags, &
          marbl_status_log)
     if (marbl_status_log%labort_marbl) then
@@ -1023,12 +1023,12 @@ contains
   !***********************************************************************
 
   subroutine marbl_compute_particulate_terms(k, domain, marbl_tracer_indices, &
-             lcompute_bottom_co3_partial_derivs,                              &
+             lcompute_bottom_co3_alt_co2_partial_derivs,                              &
              temperature, tracer_local, carbonate, fesedflux,                 &
-             d_bottom_CO3_d_DIC, d_bottom_CO3_d_ALK,                          &
+             d_bottom_CO3_ALT_CO2_d_DIC_ALT_CO2, d_bottom_CO3_ALT_CO2_d_ALK_ALT_CO2,                          &
              marbl_particulate_share, POC, POP, P_CaCO3, P_CaCO3_ALT_CO2,     &
              P_SiO2, dust, P_iron, QA_dust_def,                               &
-             d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK,          &
+             d_bottom_CaCO3_ALT_CO2_remin_d_DIC_ALT_CO2, d_bottom_CaCO3_ALT_CO2_remin_d_ALK_ALT_CO2,          &
              sed_denitrif, other_remin, PON_remin, PON_sed_loss,              &
              glo_avg_fields_interior, marbl_status_log)
 
@@ -1088,13 +1088,13 @@ contains
     integer (int_kind)                      , intent(in)    :: k                   ! vertical model level
     type(marbl_domain_type)                 , intent(in)    :: domain
     type(marbl_tracer_index_type)           , intent(in)    :: marbl_tracer_indices
-    logical(log_kind)                       , intent(in)    :: lcompute_bottom_co3_partial_derivs
+    logical(log_kind)                       , intent(in)    :: lcompute_bottom_co3_alt_co2_partial_derivs
     real (r8)                               , intent(in)    :: temperature         ! temperature for scaling functions bsi%diss
     real (r8), dimension(:)                 , intent(in)    :: tracer_local        ! local copies of model tracer concentrations
     type(carbonate_type)                    , intent(in)    :: carbonate
     real (r8)                               , intent(in)    :: fesedflux           ! sedimentary Fe input
-    real (r8)                               , intent(in)    :: d_bottom_CO3_d_DIC
-    real (r8)                               , intent(in)    :: d_bottom_CO3_d_ALK
+    real (r8)                               , intent(in)    :: d_bottom_CO3_ALT_CO2_d_DIC_ALT_CO2
+    real (r8)                               , intent(in)    :: d_bottom_CO3_ALT_CO2_d_ALK_ALT_CO2
     type(marbl_particulate_share_type)      , intent(inout) :: marbl_particulate_share
     type(column_sinking_particle_type)      , intent(inout) :: POC                 ! base units = nmol C
     type(column_sinking_particle_type)      , intent(inout) :: POP                 ! base units = nmol P
@@ -1104,8 +1104,8 @@ contains
     type(column_sinking_particle_type)      , intent(inout) :: dust                ! base units = g
     type(column_sinking_particle_type)      , intent(inout) :: P_iron              ! base units = nmol Fe
     real (r8)                               , intent(inout) :: QA_dust_def         ! incoming deficit in the QA(dust) POC flux
-    real (r8)                               , intent(inout) :: d_bottom_CaCO3_remin_d_DIC
-    real (r8)                               , intent(inout) :: d_bottom_CaCO3_remin_d_ALK
+    real (r8)                               , intent(inout) :: d_bottom_CaCO3_ALT_CO2_remin_d_DIC_ALT_CO2
+    real (r8)                               , intent(inout) :: d_bottom_CaCO3_ALT_CO2_remin_d_ALK_ALT_CO2
     real (r8)                               , intent(out)   :: sed_denitrif        ! sedimentary denitrification (umolN/cm^2/s)
     real (r8)                               , intent(out)   :: other_remin         ! sedimentary remin not due to oxic or denitrification
     real (r8)                               , intent(out)   :: PON_remin           ! remin of PON
@@ -1145,8 +1145,10 @@ contains
          dz_loc, dzr_loc       ! dz, dzr at a particular i, j location
 
     real (r8) :: &
-         CaCO3_sed_loss_DIC_pos, CaCO3_sed_loss_DIC_neg, d_CaCO3_sed_loss_d_DIC, &
-         CaCO3_sed_loss_ALK_pos, CaCO3_sed_loss_ALK_neg, d_CaCO3_sed_loss_d_ALK
+         CaCO3_ALT_CO2_sed_loss_DIC_ALT_CO2_pos, CaCO3_ALT_CO2_sed_loss_DIC_ALT_CO2_neg, &
+         d_CaCO3_ALT_CO2_sed_loss_d_DIC_ALT_CO2, &
+         CaCO3_ALT_CO2_sed_loss_ALK_ALT_CO2_pos, CaCO3_ALT_CO2_sed_loss_ALK_ALT_CO2_neg, &
+         d_CaCO3_ALT_CO2_sed_loss_d_ALK_ALT_CO2
 
     real (r8), parameter :: &  ! o2_sf is an abbreviation for o2_scalefactor
          o2_sf_o2_range_hi = 45.0_r8, & ! apply o2_scalefactor for O2_loc less than this
@@ -1611,48 +1613,51 @@ contains
              P_CaCO3%sed_loss(k)         = P_CaCO3%sflux_out(k)         + P_CaCO3%hflux_out(k)
              P_CaCO3_ALT_CO2%sed_loss(k) = P_CaCO3_ALT_CO2%sflux_out(k) + P_CaCO3_ALT_CO2%hflux_out(k)
           endif
-          d_bottom_CaCO3_remin_d_DIC = c0
-          d_bottom_CaCO3_remin_d_ALK = c0
+          d_bottom_CaCO3_ALT_CO2_remin_d_DIC_ALT_CO2 = c0
+          d_bottom_CaCO3_ALT_CO2_remin_d_ALK_ALT_CO2 = c0
        else ! caco3_bury_thres_iopt = caco3_bury_thres_iopt_omega_calc
           flux = P_CaCO3%sflux_out(k) + P_CaCO3%hflux_out(k)
           if (carbonate%CO3 > carbonate%CO3_sat_calcite) then
              P_CaCO3%sed_loss(k) = flux
           endif
+          flux = P_CaCO3_ALT_CO2%sflux_out(k) + P_CaCO3_ALT_CO2%hflux_out(k)
+          if (carbonate%CO3_ALT_CO2 > carbonate%CO3_sat_calcite) then
+             P_CaCO3_ALT_CO2%sed_loss(k) = flux
+          endif
           ! if flux == 0 then derivative of CaCO3_remin == 0, so don't bother computing it
-          if (lcompute_bottom_co3_partial_derivs .and. flux > c0) then
+          if (lcompute_bottom_co3_alt_co2_partial_derivs .and. flux > c0) then
              ! compute approximation to partial derivatives over wider DIC and ALK intervals,
              !   in order to smooth out discontinuity of step function
-             if (carbonate%CO3 + c2 * d_bottom_CO3_d_DIC > carbonate%CO3_sat_calcite) then
-                CaCO3_sed_loss_DIC_pos = flux
+             if (carbonate%CO3_ALT_CO2 + c2 * d_bottom_CO3_ALT_CO2_d_DIC_ALT_CO2 > carbonate%CO3_sat_calcite) then
+                CaCO3_ALT_CO2_sed_loss_DIC_ALT_CO2_pos = flux
              else
-                CaCO3_sed_loss_DIC_pos = c0
+                CaCO3_ALT_CO2_sed_loss_DIC_ALT_CO2_pos = c0
              endif
-             if (carbonate%CO3 - c2 * d_bottom_CO3_d_DIC > carbonate%CO3_sat_calcite) then
-                CaCO3_sed_loss_DIC_neg = flux
+             if (carbonate%CO3_ALT_CO2 - c2 * d_bottom_CO3_ALT_CO2_d_DIC_ALT_CO2 > carbonate%CO3_sat_calcite) then
+                CaCO3_ALT_CO2_sed_loss_DIC_ALT_CO2_neg = flux
              else
-                CaCO3_sed_loss_DIC_neg = c0
+                CaCO3_ALT_CO2_sed_loss_DIC_ALT_CO2_neg = c0
              endif
-             d_CaCO3_sed_loss_d_DIC = p25 * (CaCO3_sed_loss_DIC_pos - CaCO3_sed_loss_DIC_neg)
-             d_bottom_CaCO3_remin_d_DIC = -d_CaCO3_sed_loss_d_DIC * dzr_loc
+             d_CaCO3_ALT_CO2_sed_loss_d_DIC_ALT_CO2 = &
+                p25 * (CaCO3_ALT_CO2_sed_loss_DIC_ALT_CO2_pos - CaCO3_ALT_CO2_sed_loss_DIC_ALT_CO2_neg)
+             d_bottom_CaCO3_ALT_CO2_remin_d_DIC_ALT_CO2 = -d_CaCO3_ALT_CO2_sed_loss_d_DIC_ALT_CO2 * dzr_loc
 
-             if (carbonate%CO3 + c2 * d_bottom_CO3_d_ALK > carbonate%CO3_sat_calcite) then
-                CaCO3_sed_loss_ALK_pos = flux
+             if (carbonate%CO3_ALT_CO2 + c2 * d_bottom_CO3_ALT_CO2_d_ALK_ALT_CO2 > carbonate%CO3_sat_calcite) then
+                CaCO3_ALT_CO2_sed_loss_ALK_ALT_CO2_pos = flux
              else
-                CaCO3_sed_loss_ALK_pos = c0
+                CaCO3_ALT_CO2_sed_loss_ALK_ALT_CO2_pos = c0
              endif
-             if (carbonate%CO3 - c2 * d_bottom_CO3_d_ALK > carbonate%CO3_sat_calcite) then
-                CaCO3_sed_loss_ALK_neg = flux
+             if (carbonate%CO3_ALT_CO2 - c2 * d_bottom_CO3_ALT_CO2_d_ALK_ALT_CO2 > carbonate%CO3_sat_calcite) then
+                CaCO3_ALT_CO2_sed_loss_ALK_ALT_CO2_neg = flux
              else
-                CaCO3_sed_loss_ALK_neg = c0
+                CaCO3_ALT_CO2_sed_loss_ALK_ALT_CO2_neg = c0
              endif
-             d_CaCO3_sed_loss_d_ALK = p25 * (CaCO3_sed_loss_ALK_pos - CaCO3_sed_loss_ALK_neg)
-             d_bottom_CaCO3_remin_d_ALK = -d_CaCO3_sed_loss_d_ALK * dzr_loc
+             d_CaCO3_ALT_CO2_sed_loss_d_ALK_ALT_CO2 = &
+                p25 * (CaCO3_ALT_CO2_sed_loss_ALK_ALT_CO2_pos - CaCO3_ALT_CO2_sed_loss_ALK_ALT_CO2_neg)
+             d_bottom_CaCO3_ALT_CO2_remin_d_ALK_ALT_CO2 = -d_CaCO3_ALT_CO2_sed_loss_d_ALK_ALT_CO2 * dzr_loc
           else
-             d_bottom_CaCO3_remin_d_DIC = c0
-             d_bottom_CaCO3_remin_d_ALK = c0
-          endif
-          if (carbonate%CO3_ALT_CO2 > carbonate%CO3_sat_calcite) then
-             P_CaCO3_ALT_CO2%sed_loss(k) = P_CaCO3_ALT_CO2%sflux_out(k) + P_CaCO3_ALT_CO2%hflux_out(k)
+             d_bottom_CaCO3_ALT_CO2_remin_d_DIC_ALT_CO2 = c0
+             d_bottom_CaCO3_ALT_CO2_remin_d_ALK_ALT_CO2 = c0
           endif
        endif
 
@@ -1927,8 +1932,8 @@ contains
 
          piston_velocity      => surface_forcing_internal%piston_velocity(:),                       &
          flux_co2             => surface_forcing_internal%flux_co2(:),                              &
-         d_sf_dic_d_dic       => surface_forcing_internal%d_sf_dic_d_dic(:),                        &
-         d_sf_dic_d_alk       => surface_forcing_internal%d_sf_dic_d_alk(:),                        &
+         d_sf_dic_alt_co2_d_dic_alt_co2       => surface_forcing_internal%d_sf_dic_alt_co2_d_dic_alt_co2(:),                        &
+         d_sf_dic_alt_co2_d_alk_alt_co2       => surface_forcing_internal%d_sf_dic_alt_co2_d_alk_alt_co2(:),                        &
          co2star              => surface_forcing_internal%co2star(:),                               &
          dco2star             => surface_forcing_internal%dco2star(:),                              &
          pco2surf             => surface_forcing_internal%pco2surf(:),                              &
@@ -2092,144 +2097,6 @@ contains
             surface_forcing_output%sfo(sfo_ind%flux_co2_id)%forcing_field = flux_co2
           end if
 
-          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_SF_DIC_d_DIC)%compute_now) then
-             ! centered finite difference approximation
-
-             call marbl_co2calc_state_set_dic( &
-                  num_elements        = num_elements, &
-                  num_active_elements = num_elements, &
-                  dic                 = surface_vals(:,dic_ind) + 0.5_r8, &
-                  co2calc_state       = co2calc_state)
-
-             call marbl_co2calc_surf( &
-                  num_elements         = num_elements, &
-                  lcomp_co2calc_coeffs = .false., &
-                  co2calc_state_in     = co2calc_state, &
-                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
-                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
-                  phlo                 = phlo, &
-                  phhi                 = phhi, &
-                  co2calc_coeffs       = co2calc_coeffs, &
-                  co3                  = co3_tmp, &
-                  co2star              = co2star_tmp, &
-                  dco2star             = dco2star_pos_inc, &
-                  pco2surf             = pco2surf_tmp, &
-                  dpco2                = dpco2_tmp, &
-                  ph                   = ph_tmp, &
-                  marbl_status_log     = marbl_status_log)
-
-             if (marbl_status_log%labort_marbl) then
-                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
-                return
-             end if
-
-             call marbl_co2calc_state_set_dic( &
-                  num_elements        = num_elements, &
-                  num_active_elements = num_elements, &
-                  dic                 = surface_vals(:,dic_ind) - 0.5_r8, &
-                  co2calc_state       = co2calc_state)
-
-             call marbl_co2calc_surf( &
-                  num_elements         = num_elements, &
-                  lcomp_co2calc_coeffs = .false., &
-                  co2calc_state_in     = co2calc_state, &
-                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
-                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
-                  phlo                 = phlo, &
-                  phhi                 = phhi, &
-                  co2calc_coeffs       = co2calc_coeffs, &
-                  co3                  = co3_tmp, &
-                  co2star              = co2star_tmp, &
-                  dco2star             = dco2star_neg_inc, &
-                  pco2surf             = pco2surf_tmp, &
-                  dpco2                = dpco2_tmp, &
-                  ph                   = ph_tmp, &
-                  marbl_status_log     = marbl_status_log)
-
-             if (marbl_status_log%labort_marbl) then
-                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
-                return
-             end if
-
-             ! reset dic in co2calc_state
-             call marbl_co2calc_state_set_dic( &
-                  num_elements        = num_elements, &
-                  num_active_elements = num_elements, &
-                  dic                 = surface_vals(:,dic_ind), &
-                  co2calc_state       = co2calc_state)
-
-             d_sf_dic_d_dic(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
-          end if
-
-          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_SF_DIC_d_ALK)%compute_now) then
-             ! centered finite difference approximation
-
-             call marbl_co2calc_state_set_ta( &
-                  num_elements        = num_elements, &
-                  num_active_elements = num_elements, &
-                  ta                  = surface_vals(:,alk_ind) + 0.5_r8, &
-                  co2calc_state       = co2calc_state)
-
-             call marbl_co2calc_surf( &
-                  num_elements         = num_elements, &
-                  lcomp_co2calc_coeffs = .false., &
-                  co2calc_state_in     = co2calc_state, &
-                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
-                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
-                  phlo                 = phlo, &
-                  phhi                 = phhi, &
-                  co2calc_coeffs       = co2calc_coeffs, &
-                  co3                  = co3_tmp, &
-                  co2star              = co2star_tmp, &
-                  dco2star             = dco2star_pos_inc, &
-                  pco2surf             = pco2surf_tmp, &
-                  dpco2                = dpco2_tmp, &
-                  ph                   = ph_tmp, &
-                  marbl_status_log     = marbl_status_log)
-
-             if (marbl_status_log%labort_marbl) then
-                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
-                return
-             end if
-
-             call marbl_co2calc_state_set_ta( &
-                  num_elements        = num_elements, &
-                  num_active_elements = num_elements, &
-                  ta                  = surface_vals(:,alk_ind) - 0.5_r8, &
-                  co2calc_state       = co2calc_state)
-
-             call marbl_co2calc_surf( &
-                  num_elements         = num_elements, &
-                  lcomp_co2calc_coeffs = .false., &
-                  co2calc_state_in     = co2calc_state, &
-                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
-                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
-                  phlo                 = phlo, &
-                  phhi                 = phhi, &
-                  co2calc_coeffs       = co2calc_coeffs, &
-                  co3                  = co3_tmp, &
-                  co2star              = co2star_tmp, &
-                  dco2star             = dco2star_neg_inc, &
-                  pco2surf             = pco2surf_tmp, &
-                  dpco2                = dpco2_tmp, &
-                  ph                   = ph_tmp, &
-                  marbl_status_log     = marbl_status_log)
-
-             if (marbl_status_log%labort_marbl) then
-                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
-                return
-             end if
-
-             ! reset ta in co2calc_state
-             call marbl_co2calc_state_set_ta( &
-                  num_elements        = num_elements, &
-                  num_active_elements = num_elements, &
-                  ta                  = surface_vals(:,alk_ind), &
-                  co2calc_state       = co2calc_state)
-
-             d_sf_dic_d_alk(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
-          end if
- 
           !-------------------------------------------------------------------
           !  The following variables need to be shared with other modules,
           !  and are now defined in marbl_share as targets.
@@ -2300,6 +2167,144 @@ contains
 
           stf(:, dic_ind)         = stf(:, dic_ind)         + flux_co2(:)
           stf(:, dic_alt_co2_ind) = stf(:, dic_alt_co2_ind) + FLUX_ALT_CO2(:)
+
+          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_SF_DIC_alt_co2_d_DIC_alt_co2)%compute_now) then
+             ! centered finite difference approximation
+
+             call marbl_co2calc_state_set_dic( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  dic                 = surface_vals(:,dic_alt_co2_ind) + 0.5_r8, &
+                  co2calc_state       = co2calc_state)
+
+             call marbl_co2calc_surf( &
+                  num_elements         = num_elements, &
+                  lcomp_co2calc_coeffs = .false., &
+                  co2calc_state_in     = co2calc_state, &
+                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
+                  phlo                 = phlo, &
+                  phhi                 = phhi, &
+                  co2calc_coeffs       = co2calc_coeffs, &
+                  co3                  = co3_tmp, &
+                  co2star              = co2star_tmp, &
+                  dco2star             = dco2star_pos_inc, &
+                  pco2surf             = pco2surf_tmp, &
+                  dpco2                = dpco2_tmp, &
+                  ph                   = ph_tmp, &
+                  marbl_status_log     = marbl_status_log)
+
+             if (marbl_status_log%labort_marbl) then
+                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+                return
+             end if
+
+             call marbl_co2calc_state_set_dic( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  dic                 = surface_vals(:,dic_alt_co2_ind) - 0.5_r8, &
+                  co2calc_state       = co2calc_state)
+
+             call marbl_co2calc_surf( &
+                  num_elements         = num_elements, &
+                  lcomp_co2calc_coeffs = .false., &
+                  co2calc_state_in     = co2calc_state, &
+                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
+                  phlo                 = phlo, &
+                  phhi                 = phhi, &
+                  co2calc_coeffs       = co2calc_coeffs, &
+                  co3                  = co3_tmp, &
+                  co2star              = co2star_tmp, &
+                  dco2star             = dco2star_neg_inc, &
+                  pco2surf             = pco2surf_tmp, &
+                  dpco2                = dpco2_tmp, &
+                  ph                   = ph_tmp, &
+                  marbl_status_log     = marbl_status_log)
+
+             if (marbl_status_log%labort_marbl) then
+                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+                return
+             end if
+
+             ! reset dic in co2calc_state
+             call marbl_co2calc_state_set_dic( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  dic                 = surface_vals(:,dic_alt_co2_ind), &
+                  co2calc_state       = co2calc_state)
+
+             d_sf_dic_alt_co2_d_dic_alt_co2(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
+          end if
+
+          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_SF_DIC_alt_co2_d_ALK_alt_co2)%compute_now) then
+             ! centered finite difference approximation
+
+             call marbl_co2calc_state_set_ta( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  ta                  = surface_vals(:,alk_alt_co2_ind) + 0.5_r8, &
+                  co2calc_state       = co2calc_state)
+
+             call marbl_co2calc_surf( &
+                  num_elements         = num_elements, &
+                  lcomp_co2calc_coeffs = .false., &
+                  co2calc_state_in     = co2calc_state, &
+                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
+                  phlo                 = phlo, &
+                  phhi                 = phhi, &
+                  co2calc_coeffs       = co2calc_coeffs, &
+                  co3                  = co3_tmp, &
+                  co2star              = co2star_tmp, &
+                  dco2star             = dco2star_pos_inc, &
+                  pco2surf             = pco2surf_tmp, &
+                  dpco2                = dpco2_tmp, &
+                  ph                   = ph_tmp, &
+                  marbl_status_log     = marbl_status_log)
+
+             if (marbl_status_log%labort_marbl) then
+                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+                return
+             end if
+
+             call marbl_co2calc_state_set_ta( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  ta                  = surface_vals(:,alk_alt_co2_ind) - 0.5_r8, &
+                  co2calc_state       = co2calc_state)
+
+             call marbl_co2calc_surf( &
+                  num_elements         = num_elements, &
+                  lcomp_co2calc_coeffs = .false., &
+                  co2calc_state_in     = co2calc_state, &
+                  atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                  xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
+                  phlo                 = phlo, &
+                  phhi                 = phhi, &
+                  co2calc_coeffs       = co2calc_coeffs, &
+                  co3                  = co3_tmp, &
+                  co2star              = co2star_tmp, &
+                  dco2star             = dco2star_neg_inc, &
+                  pco2surf             = pco2surf_tmp, &
+                  dpco2                = dpco2_tmp, &
+                  ph                   = ph_tmp, &
+                  marbl_status_log     = marbl_status_log)
+
+             if (marbl_status_log%labort_marbl) then
+                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+                return
+             end if
+
+             ! reset ta in co2calc_state
+             call marbl_co2calc_state_set_ta( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+               ta                  = surface_vals(:,alk_alt_co2_ind), &
+               co2calc_state       = co2calc_state)
+
+             d_sf_dic_alt_co2_d_alk_alt_co2(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
+            end if
 
        else
           schmidt_co2(:) = c0
@@ -2841,10 +2846,10 @@ contains
 
   !***********************************************************************
 
-  subroutine marbl_compute_carbonate_chemistry(domain, lcompute_bottom_co3_partial_derivs, &
+  subroutine marbl_compute_carbonate_chemistry(domain, lcompute_bottom_co3_alt_co2_partial_derivs, &
        temperature, press_bar, salinity, tracer_local, marbl_tracer_indices, &
        ph_prev_col, ph_prev_alt_co2_col, carbonate, &
-       d_bottom_CO3_d_DIC, d_bottom_CO3_d_ALK, marbl_status_log)
+       d_bottom_CO3_ALT_CO2_d_DIC_ALT_CO2, d_bottom_CO3_ALT_CO2_d_ALK_ALT_CO2, marbl_status_log)
 
     use marbl_co2calc_mod, only : marbl_co2calc_state_set
     use marbl_co2calc_mod, only : marbl_co2calc_state_set_dic
@@ -2855,7 +2860,7 @@ contains
     use marbl_co2calc_mod, only : co2calc_state_type
 
     type(marbl_domain_type)                 , intent(in)    :: domain
-    logical(log_kind)                       , intent(in)    :: lcompute_bottom_co3_partial_derivs
+    logical(log_kind)                       , intent(in)    :: lcompute_bottom_co3_alt_co2_partial_derivs
     real (r8)                               , intent(in)    :: temperature(:)
     real (r8)                               , intent(in)    :: press_bar(:)
     real (r8)                               , intent(in)    :: salinity(:)
@@ -2864,8 +2869,8 @@ contains
     real(r8)                                , intent(inout) :: ph_prev_col(:)          ! km
     real(r8)                                , intent(inout) :: ph_prev_alt_co2_col(:)  ! km
     type(carbonate_type)                    , intent(out)   :: carbonate(:)            ! km
-    real(r8)                                , intent(out)   :: d_bottom_CO3_d_DIC
-    real(r8)                                , intent(out)   :: d_bottom_CO3_d_ALK
+    real(r8)                                , intent(out)   :: d_bottom_CO3_ALT_CO2_d_DIC_ALT_CO2
+    real(r8)                                , intent(out)   :: d_bottom_CO3_ALT_CO2_d_ALK_ALT_CO2
     type(marbl_log_type)                    , intent(inout) :: marbl_status_log
 
     !-----------------------------------------------------------------------
@@ -2978,70 +2983,6 @@ contains
     end if
 
     !-----------------------------------------------------------------------
-    ! compute d_bottom_CO3 terms
-    !-----------------------------------------------------------------------
-
-    if (lcompute_bottom_co3_partial_derivs) then
-      bottom_pressure_correct(:) = pressure_correct(column_kmt)
-
-      bottom_temperature(:)      = temperature(column_kmt)
-      bottom_salinity(:)         = salinity(column_kmt)
-      bottom_press_bar(:)        = press_bar(column_kmt)
-      bottom_dic(:)              = dic_loc(column_kmt)
-      bottom_alk(:)              = alk_loc(column_kmt)
-      bottom_po4(:)              = po4_loc(column_kmt)
-      bottom_sio3(:)             = sio3_loc(column_kmt)
-
-      ! entries 1:2 are for 2nd order centered finite difference approximation wrt dic
-      bottom_dic(1)              = dic_loc(column_kmt) + 0.5_r8
-      bottom_dic(2)              = dic_loc(column_kmt) - 0.5_r8
-
-      ! entries 3:4 are for 2nd order centered finite difference approximation wrt alk
-      bottom_alk(3)              = alk_loc(column_kmt) + 0.5_r8
-      bottom_alk(4)              = alk_loc(column_kmt) - 0.5_r8
-
-      call marbl_co2calc_state_set( &
-           num_elements        = fin_diff_array_len, &
-           num_active_elements = fin_diff_array_len, &
-           temp                = bottom_temperature, &
-           salt                = bottom_salinity, &
-           sw_press_bar        = bottom_press_bar, &
-           dic                 = bottom_dic(:), &
-           ta                  = bottom_alk(:), &
-           pt                  = bottom_po4(:), &
-           sit                 = bottom_sio3(:), &
-           co2calc_state       = bottom_co2calc_state)
-
-      bottom_ph_lower_bound(:)   = ph(column_kmt) - del_ph
-      bottom_ph_upper_bound(:)   = ph(column_kmt) + del_ph
-      bottom_co2calc_coeffs(:)   = co2calc_coeffs(column_kmt)
-
-      call marbl_comp_CO3terms( &
-           fin_diff_array_len, fin_diff_array_len, bottom_pressure_correct, .false., &
-           bottom_co2calc_state, bottom_ph_lower_bound, bottom_ph_upper_bound, bottom_co2calc_coeffs, &
-           bottom_ph, bottom_h2co3, bottom_hco3, bottom_co3, marbl_status_log)
-
-      if (marbl_status_log%labort_marbl) then
-        call marbl_status_log%log_error_trace('marbl_comp_CO3terms()', subname)
-        return
-      end if
-
-      ! entries 1:2 are for 2nd order centered finite difference approximation wrt dic
-      ! 2*delta DIC = 1.0, so division is unnecessary
-      d_bottom_CO3_d_DIC = (bottom_co3(1) - bottom_co3(2))
-
-      ! entries 3:4 are for 2nd order centered finite difference approximation wrt alk
-      ! 2*delta ALK = 1.0, so division is unnecessary
-      d_bottom_CO3_d_ALK = (bottom_co3(3) - bottom_co3(4))
-
-    else
-
-      d_bottom_CO3_d_DIC = c0
-      d_bottom_CO3_d_ALK = c0
-
-    end if
-
-    !-----------------------------------------------------------------------
     ! compute carbonate terms for dic_alt_co2 and alk_alt_co2 values
     !-----------------------------------------------------------------------
 
@@ -3084,6 +3025,70 @@ contains
     end if
 
     ph_prev_alt_co2_col = ph_alt_co2
+
+    !-----------------------------------------------------------------------
+    ! compute d_bottom_CO3_ALT_CO2 terms
+    !-----------------------------------------------------------------------
+
+    if (lcompute_bottom_co3_alt_co2_partial_derivs) then
+      bottom_pressure_correct(:) = pressure_correct(column_kmt)
+
+      bottom_temperature(:)      = temperature(column_kmt)
+      bottom_salinity(:)         = salinity(column_kmt)
+      bottom_press_bar(:)        = press_bar(column_kmt)
+      bottom_dic(:)              = dic_alt_co2_loc(column_kmt)
+      bottom_alk(:)              = alk_alt_co2_loc(column_kmt)
+      bottom_po4(:)              = po4_loc(column_kmt)
+      bottom_sio3(:)             = sio3_loc(column_kmt)
+
+      ! entries 1:2 are for 2nd order centered finite difference approximation wrt dic
+      bottom_dic(1)              = dic_alt_co2_loc(column_kmt) + 0.5_r8
+      bottom_dic(2)              = dic_alt_co2_loc(column_kmt) - 0.5_r8
+
+      ! entries 3:4 are for 2nd order centered finite difference approximation wrt alk
+      bottom_alk(3)              = alk_alt_co2_loc(column_kmt) + 0.5_r8
+      bottom_alk(4)              = alk_alt_co2_loc(column_kmt) - 0.5_r8
+
+      call marbl_co2calc_state_set( &
+           num_elements        = fin_diff_array_len, &
+           num_active_elements = fin_diff_array_len, &
+           temp                = bottom_temperature, &
+           salt                = bottom_salinity, &
+           sw_press_bar        = bottom_press_bar, &
+           dic                 = bottom_dic(:), &
+           ta                  = bottom_alk(:), &
+           pt                  = bottom_po4(:), &
+           sit                 = bottom_sio3(:), &
+           co2calc_state       = bottom_co2calc_state)
+
+      bottom_ph_lower_bound(:)   = ph_alt_co2(column_kmt) - del_ph
+      bottom_ph_upper_bound(:)   = ph_alt_co2(column_kmt) + del_ph
+      bottom_co2calc_coeffs(:)   = co2calc_coeffs(column_kmt)
+
+      call marbl_comp_CO3terms( &
+           fin_diff_array_len, fin_diff_array_len, bottom_pressure_correct, .false., &
+           bottom_co2calc_state, bottom_ph_lower_bound, bottom_ph_upper_bound, bottom_co2calc_coeffs, &
+           bottom_ph, bottom_h2co3, bottom_hco3, bottom_co3, marbl_status_log)
+
+      if (marbl_status_log%labort_marbl) then
+        call marbl_status_log%log_error_trace('marbl_comp_CO3terms()', subname)
+        return
+      end if
+
+      ! entries 1:2 are for 2nd order centered finite difference approximation wrt dic
+      ! 2*delta DIC = 1.0, so division is unnecessary
+      d_bottom_CO3_ALT_CO2_d_DIC_ALT_CO2 = (bottom_co3(1) - bottom_co3(2))
+
+      ! entries 3:4 are for 2nd order centered finite difference approximation wrt alk
+      ! 2*delta ALK = 1.0, so division is unnecessary
+      d_bottom_CO3_ALT_CO2_d_ALK_ALT_CO2 = (bottom_co3(3) - bottom_co3(4))
+
+       else
+
+      d_bottom_CO3_ALT_CO2_d_DIC_ALT_CO2 = c0
+      d_bottom_CO3_ALT_CO2_d_ALK_ALT_CO2 = c0
+
+    end if
 
     call marbl_comp_co3_sat_vals(&
          dkm, column_kmt, pressure_correct, temperature, salinity, &

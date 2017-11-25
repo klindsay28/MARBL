@@ -54,8 +54,8 @@ module marbl_interface_private_types
   type, public :: marbl_surface_forcing_internal_type
      real (r8), allocatable, dimension(:)   :: piston_velocity
      real (r8), allocatable, dimension(:)   :: flux_co2
-     real (r8), allocatable, dimension(:)   :: d_sf_dic_d_dic
-     real (r8), allocatable, dimension(:)   :: d_sf_dic_d_alk
+     real (r8), allocatable, dimension(:)   :: d_sf_dic_alt_co2_d_dic_alt_co2
+     real (r8), allocatable, dimension(:)   :: d_sf_dic_alt_co2_d_alk_alt_co2
      real (r8), allocatable, dimension(:)   :: flux_alt_co2 ! tracer flux alternative CO2 (nmol/cm^2/s)
      real (r8), allocatable, dimension(:)   :: co2star
      real (r8), allocatable, dimension(:)   :: dco2star
@@ -491,8 +491,8 @@ contains
 
     allocate(this%piston_velocity (num_elements))
     allocate(this%flux_co2        (num_elements))
-    allocate(this%d_sf_dic_d_dic  (num_elements))
-    allocate(this%d_sf_dic_d_alk  (num_elements))
+    allocate(this%d_sf_dic_alt_co2_d_dic_alt_co2(num_elements))
+    allocate(this%d_sf_dic_alt_co2_d_alk_alt_co2(num_elements))
     allocate(this%flux_alt_co2    (num_elements))
     allocate(this%co2star         (num_elements))
     allocate(this%dco2star        (num_elements))

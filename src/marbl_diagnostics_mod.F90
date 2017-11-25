@@ -156,10 +156,10 @@ module marbl_diagnostics_mod
     integer(int_kind) :: Lig_photochem
     integer(int_kind) :: Lig_deg
 
-    integer(int_kind) :: d_bottom_J_DIC_d_DIC
-    integer(int_kind) :: d_bottom_J_DIC_d_ALK
-    integer(int_kind) :: d_bottom_J_ALK_d_DIC
-    integer(int_kind) :: d_bottom_J_ALK_d_ALK
+    integer(int_kind) :: d_bottom_J_DIC_ALT_CO2_d_DIC_ALT_CO2
+    integer(int_kind) :: d_bottom_J_DIC_ALT_CO2_d_ALK_ALT_CO2
+    integer(int_kind) :: d_bottom_J_ALK_ALT_CO2_d_DIC_ALT_CO2
+    integer(int_kind) :: d_bottom_J_ALK_ALT_CO2_d_ALK_ALT_CO2
 
     ! Particulate 3D diags
     integer(int_kind) :: POC_FLUX_IN
@@ -305,8 +305,8 @@ module marbl_diagnostics_mod
      integer(int_kind) :: PV_CO2
      integer(int_kind) :: SCHMIDT_CO2
      integer(int_kind) :: DIC_GAS_FLUX
-     integer(int_kind) :: d_SF_DIC_d_DIC
-     integer(int_kind) :: d_SF_DIC_d_ALK
+     integer(int_kind) :: d_SF_DIC_ALT_CO2_d_DIC_ALT_CO2
+     integer(int_kind) :: d_SF_DIC_ALT_CO2_d_ALK_ALT_CO2
      integer(int_kind) :: PH
      integer(int_kind) :: ATM_CO2
      integer(int_kind) :: CO2STAR_ALT_CO2
@@ -560,25 +560,25 @@ contains
         return
       end if
 
-      lname    = 'd_SF_DIC_d_DIC'
-      sname    = 'd_SF_DIC_d_DIC'
+      lname    = 'd_SF_DIC_ALT_CO2_d_DIC_ALT_CO2'
+      sname    = 'd_SF_DIC_ALT_CO2_d_DIC_ALT_CO2'
       units    = 'cm/s'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%d_SF_DIC_d_DIC, marbl_status_log)
+           ind%d_SF_DIC_ALT_CO2_d_DIC_ALT_CO2, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
       end if
 
-      lname    = 'd_SF_DIC_d_ALK'
-      sname    = 'd_SF_DIC_d_ALK'
+      lname    = 'd_SF_DIC_ALT_CO2_d_ALK_ALT_CO2'
+      sname    = 'd_SF_DIC_ALT_CO2_d_ALK_ALT_CO2'
       units    = 'cm/s'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%d_SF_DIC_d_ALK, marbl_status_log)
+           ind%d_SF_DIC_ALT_CO2_d_ALK_ALT_CO2, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
@@ -1842,49 +1842,49 @@ contains
         return
       end if
 
-      lname    = 'd_bottom_J_DIC_d_DIC'
-      sname    = 'd_bottom_J_DIC_d_DIC'
+      lname    = 'd_bottom_J_DIC_ALT_CO2_d_DIC_ALT_CO2'
+      sname    = 'd_bottom_J_DIC_ALT_CO2_d_DIC_ALT_CO2'
       units    = '1/s'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%d_bottom_J_DIC_d_DIC, marbl_status_log)
+           ind%d_bottom_J_DIC_ALT_CO2_d_DIC_ALT_CO2, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
       end if
 
-      lname    = 'd_bottom_J_DIC_d_ALK'
-      sname    = 'd_bottom_J_DIC_d_ALK'
+      lname    = 'd_bottom_J_DIC_ALT_CO2_d_ALK_ALT_CO2'
+      sname    = 'd_bottom_J_DIC_ALT_CO2_d_ALK_ALT_CO2'
       units    = '1/s'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%d_bottom_J_DIC_d_ALK, marbl_status_log)
+           ind%d_bottom_J_DIC_ALT_CO2_d_ALK_ALT_CO2, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
       end if
 
-      lname    = 'd_bottom_J_ALK_d_DIC'
-      sname    = 'd_bottom_J_ALK_d_DIC'
+      lname    = 'd_bottom_J_ALK_ALT_CO2_d_DIC_ALT_CO2'
+      sname    = 'd_bottom_J_ALK_ALT_CO2_d_DIC_ALT_CO2'
       units    = '1/s'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%d_bottom_J_ALK_d_DIC, marbl_status_log)
+           ind%d_bottom_J_ALK_ALT_CO2_d_DIC_ALT_CO2, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
       end if
 
-      lname    = 'd_bottom_J_ALK_d_ALK'
-      sname    = 'd_bottom_J_ALK_d_ALK'
+      lname    = 'd_bottom_J_ALK_ALT_CO2_d_ALK_ALT_CO2'
+      sname    = 'd_bottom_J_ALK_ALT_CO2_d_ALK_ALT_CO2'
       units    = '1/s'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%d_bottom_J_ALK_d_ALK, marbl_status_log)
+           ind%d_bottom_J_ALK_ALT_CO2_d_ALK_ALT_CO2, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
@@ -3348,7 +3348,7 @@ contains
        Lig_prod, Lig_loss, Lig_scavenge, Fefree,      &
        Lig_photochem, Lig_deg,                        &
        interior_restore,                              &
-       d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK, &
+       d_bottom_CaCO3_remin_d_DIC_ALT_CO2, d_bottom_CaCO3_remin_d_ALK_ALT_CO2, &
        marbl_interior_forcing_diags,                  &
        marbl_status_log)
 
@@ -3387,8 +3387,8 @@ contains
     real (r8)                                 , intent(in) :: Lig_photochem(domain%km)
     real (r8)                                 , intent(in) :: Lig_deg(domain%km)
     real (r8)                                 , intent(in) :: interior_restore(:,:)       ! (tracer_cnt, km) local restoring terms for nutrients (mmol ./m^3/sec)
-    real (r8)                                 , intent(in) :: d_bottom_CaCO3_remin_d_DIC
-    real (r8)                                 , intent(in) :: d_bottom_CaCO3_remin_d_ALK
+    real (r8)                                 , intent(in) :: d_bottom_CaCO3_remin_d_DIC_ALT_CO2
+    real (r8)                                 , intent(in) :: d_bottom_CaCO3_remin_d_ALK_ALT_CO2
     type (marbl_diagnostics_type)             , intent(inout) :: marbl_interior_forcing_diags
     type (marbl_log_type)                     , intent(inout) :: marbl_status_log
 
@@ -3474,7 +3474,7 @@ contains
                                             marbl_interior_forcing_diags)
 
     call store_diagnostics_interior_partial_derivs(              &
-         d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK, &
+         d_bottom_CaCO3_remin_d_DIC_ALT_CO2, d_bottom_CaCO3_remin_d_ALK_ALT_CO2, &
          marbl_interior_forcing_diags)
 
     end associate
@@ -3538,8 +3538,8 @@ contains
 
          piston_velocity   => surface_forcing_internal%piston_velocity,                         &
          flux_co2          => surface_forcing_internal%flux_co2,                                &
-         d_sf_dic_d_dic    => surface_forcing_internal%d_sf_dic_d_dic,                          &
-         d_sf_dic_d_alk    => surface_forcing_internal%d_sf_dic_d_alk,                          &
+         d_sf_dic_ALT_CO2_d_dic_ALT_CO2    => surface_forcing_internal%d_sf_dic_ALT_CO2_d_dic_ALT_CO2,                          &
+         d_sf_dic_ALT_CO2_d_alk_ALT_CO2    => surface_forcing_internal%d_sf_dic_ALT_CO2_d_alk_ALT_CO2,                          &
          flux_alt_co2      => surface_forcing_internal%flux_alt_co2,                            &
          co2star           => surface_forcing_internal%co2star,                                 &
          dco2star          => surface_forcing_internal%dco2star,                                &
@@ -3614,10 +3614,10 @@ contains
        diags(ind_diag%PV_CO2)%field_2d(:)               = pv_co2(:)
        diags(ind_diag%SCHMIDT_CO2)%field_2d(:)          = schmidt_co2(:)
        diags(ind_diag%DIC_GAS_FLUX)%field_2d(:)         = flux_co2(:)
-       if (diags(ind_diag%d_SF_DIC_d_DIC)%compute_now) &
-          diags(ind_diag%d_SF_DIC_d_DIC)%field_2d(:) = d_sf_dic_d_dic(:)
-       if (diags(ind_diag%d_SF_DIC_d_ALK)%compute_now) &
-          diags(ind_diag%d_SF_DIC_d_ALK)%field_2d(:) = d_sf_dic_d_alk(:)
+       if (diags(ind_diag%d_SF_DIC_ALT_CO2_d_DIC_ALT_CO2)%compute_now) &
+          diags(ind_diag%d_SF_DIC_ALT_CO2_d_DIC_ALT_CO2)%field_2d(:) = d_sf_dic_ALT_CO2_d_dic_ALT_CO2(:)
+       if (diags(ind_diag%d_SF_DIC_ALT_CO2_d_ALK_ALT_CO2)%compute_now) &
+          diags(ind_diag%d_SF_DIC_ALT_CO2_d_ALK_ALT_CO2)%field_2d(:) = d_sf_dic_ALT_CO2_d_alk_ALT_CO2(:)
        diags(ind_diag%PH)%field_2d(:)                   = ph_prev(:)
        diags(ind_diag%ATM_CO2)%field_2d(:)              = xco2(:)
 
@@ -4527,13 +4527,13 @@ contains
   !***********************************************************************
 
   subroutine store_diagnostics_interior_partial_derivs( &
-         d_bottom_CaCO3_remin_d_DIC, d_bottom_CaCO3_remin_d_ALK, &
+         d_bottom_CaCO3_remin_d_DIC_ALT_CO2, d_bottom_CaCO3_remin_d_ALK_ALT_CO2, &
          marbl_diags)
 
     use marbl_constants_mod, only : c2
 
-    real (r8)                          , intent(in)    :: d_bottom_CaCO3_remin_d_DIC
-    real (r8)                          , intent(in)    :: d_bottom_CaCO3_remin_d_ALK
+    real (r8)                          , intent(in)    :: d_bottom_CaCO3_remin_d_DIC_ALT_CO2
+    real (r8)                          , intent(in)    :: d_bottom_CaCO3_remin_d_ALK_ALT_CO2
     type(marbl_diagnostics_type)       , intent(inout) :: marbl_diags
 
     integer :: n
@@ -4543,14 +4543,14 @@ contains
          ind     => marbl_interior_diag_ind  &
          )
 
-    if (diags(ind%d_bottom_J_DIC_d_DIC)%compute_now) &
-      diags(ind%d_bottom_J_DIC_d_DIC)%field_2d(1) = d_bottom_CaCO3_remin_d_DIC
-    if (diags(ind%d_bottom_J_DIC_d_ALK)%compute_now) &
-      diags(ind%d_bottom_J_DIC_d_ALK)%field_2d(1) = d_bottom_CaCO3_remin_d_ALK
-    if (diags(ind%d_bottom_J_ALK_d_DIC)%compute_now) &
-      diags(ind%d_bottom_J_ALK_d_DIC)%field_2d(1) = c2 * d_bottom_CaCO3_remin_d_DIC
-    if (diags(ind%d_bottom_J_ALK_d_ALK)%compute_now) &
-      diags(ind%d_bottom_J_ALK_d_ALK)%field_2d(1) = c2 * d_bottom_CaCO3_remin_d_ALK
+    if (diags(ind%d_bottom_J_DIC_ALT_CO2_d_DIC_ALT_CO2)%compute_now) &
+      diags(ind%d_bottom_J_DIC_ALT_CO2_d_DIC_ALT_CO2)%field_2d(1) = d_bottom_CaCO3_remin_d_DIC_ALT_CO2
+    if (diags(ind%d_bottom_J_DIC_ALT_CO2_d_ALK_ALT_CO2)%compute_now) &
+      diags(ind%d_bottom_J_DIC_ALT_CO2_d_ALK_ALT_CO2)%field_2d(1) = d_bottom_CaCO3_remin_d_ALK_ALT_CO2
+    if (diags(ind%d_bottom_J_ALK_ALT_CO2_d_DIC_ALT_CO2)%compute_now) &
+      diags(ind%d_bottom_J_ALK_ALT_CO2_d_DIC_ALT_CO2)%field_2d(1) = c2 * d_bottom_CaCO3_remin_d_DIC_ALT_CO2
+    if (diags(ind%d_bottom_J_ALK_ALT_CO2_d_ALK_ALT_CO2)%compute_now) &
+      diags(ind%d_bottom_J_ALK_ALT_CO2_d_ALK_ALT_CO2)%field_2d(1) = c2 * d_bottom_CaCO3_remin_d_ALK_ALT_CO2
 
     end associate
 
