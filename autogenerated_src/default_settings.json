@@ -570,6 +570,7 @@
       "default": 32,
       "increments": {
          "ciso_on = .true.": 14,
+         "lNK_shadow_tracers = .true.": 2,
          "lvariable_PtoC = .false.": -3
       }
    },
@@ -658,6 +659,13 @@
          "datatype": "logical",
          "default_value": ".false.",
          "longname": "Control whether CISO tracer module is active",
+         "subcategory": "2. config flags",
+         "units": "unitless"
+      },
+      "lNK_shadow_tracers": {
+         "datatype": "logical",
+         "default_value": ".false.",
+         "longname": "Control whether Newton-Krylov (NK) shadow tracers are active",
          "subcategory": "2. config flags",
          "units": "unitless"
       },
@@ -913,6 +921,7 @@
             "default": 32,
             "increments": {
                "ciso_on = .true.": 14,
+               "lNK_shadow_tracers = .true.": 2,
                "lvariable_PtoC = .false.": -3
             }
          },

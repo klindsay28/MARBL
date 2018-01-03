@@ -72,6 +72,7 @@ module marbl_interface_private_types
      real (r8), allocatable, dimension(:)   :: pv_co2       ! piston velocity (cm/s)
      real (r8), allocatable, dimension(:)   :: o2sat        ! used O2 saturation (mmol/m^3)
      real (r8), allocatable, dimension(:)   :: nhx_surface_emis
+     real (r8), allocatable, dimension(:)   :: flux_shadow_co2 ! tracer flux shadow CO2 (nmol/cm^2/s)
    contains
      procedure, public :: construct => marbl_surface_forcing_internal_constructor
      procedure, public :: destruct => marbl_surface_forcing_internal_destructor
@@ -230,6 +231,9 @@ module marbl_interface_private_types
     integer (int_kind) :: donr_ind        = 0 ! refractory DON
     integer (int_kind) :: docr_ind        = 0 ! refractory DOC
 
+    integer (int_kind) :: dic_shadow_ind  = 0 ! dissolved inorganic carbon, shadow
+    integer (int_kind) :: alk_shadow_ind  = 0 ! alkalinity, shadow
+
     ! CISO tracers
     integer (int_kind) :: di13c_ind       = 0 ! dissolved inorganic carbon 13
     integer (int_kind) :: do13c_ind       = 0 ! dissolved organic carbon 13
@@ -306,6 +310,7 @@ module marbl_interface_private_types
   type, public :: marbl_surface_saved_state_indexing_type
     integer :: ph_surf = 0
     integer :: ph_alt_co2_surf = 0
+    integer :: ph_shadow_surf = 0
   end type marbl_surface_saved_state_indexing_type
 
   !*****************************************************************************
@@ -509,6 +514,7 @@ contains
     allocate(this%pv_co2          (num_elements))
     allocate(this%o2sat           (num_elements))
     allocate(this%nhx_surface_emis(num_elements))
+    allocate(this%flux_shadow_co2 (num_elements))
 
   end subroutine marbl_surface_forcing_internal_constructor
 
@@ -537,14 +543,15 @@ contains
       deallocate(this%pv_co2          )
       deallocate(this%o2sat           )
       deallocate(this%nhx_surface_emis)
+      deallocate(this%flux_shadow_co2 )
     end if
 
   end subroutine marbl_surface_forcing_internal_destructor
 
   !*****************************************************************************
 
-  subroutine tracer_index_constructor(this, ciso_on, lvariable_PtoC, autotrophs, &
-             zooplankton, marbl_status_log, marbl_tracer_cnt)
+  subroutine tracer_index_constructor(this, autotrophs, zooplankton, &
+             marbl_status_log, marbl_tracer_cnt)
 
     ! This subroutine sets the tracer indices for the non-autotroph tracers. To
     ! know where to start the indexing for the autotroph tracers, it increments
@@ -554,10 +561,11 @@ contains
     use marbl_constants_mod, only : c0
     use marbl_pft_mod, only : autotroph_type
     use marbl_pft_mod, only : zooplankton_type
+    use marbl_settings_mod, only : ciso_on
+    use marbl_settings_mod, only : lvariable_PtoC
+    use marbl_settings_mod, only : lNK_shadow_tracers
 
     class(marbl_tracer_index_type), intent(out)   :: this
-    logical,                        intent(in)    :: ciso_on
-    logical,                        intent(in)    :: lvariable_PtoC
     type(autotroph_type),           intent(in)    :: autotrophs(:)
     type(zooplankton_type),         intent(in)    :: zooplankton(:)
     type(marbl_log_type),           intent(inout) :: marbl_status_log
@@ -595,6 +603,11 @@ contains
     call this%add_tracer_index('dopr', 'ecosys_base', this%dopr_ind, marbl_status_log)
     call this%add_tracer_index('donr', 'ecosys_base', this%donr_ind, marbl_status_log)
     call this%add_tracer_index('docr', 'ecosys_base', this%docr_ind, marbl_status_log)
+
+    if (lNK_shadow_tracers) then
+      call this%add_tracer_index('dic_shadow', 'ecosys_base', this%dic_shadow_ind, marbl_status_log)
+      call this%add_tracer_index('alk_shadow', 'ecosys_base', this%alk_shadow_ind, marbl_status_log)
+    end if
 
     do n=1,zooplankton_cnt
       write(ind_name, "(2A)") trim(zooplankton(n)%sname), "C"

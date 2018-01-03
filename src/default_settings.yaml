@@ -53,6 +53,7 @@ _tracer_cnt : &TRACER_CNT
    increments :
       lvariable_PtoC = .false. : -3
       ciso_on = .true. : 14
+      lNK_shadow_tracers = .true. : 2
 
 ################################################################################
 #                        Category 1: General Parameters                        #
@@ -326,6 +327,12 @@ general_parms :
       units : non-numeric
       datatype : string
       default_value : Laws
+   lNK_shadow_tracers :
+      longname : Control whether Newton-Krylov (NK) shadow tracers are active
+      subcategory : 2. config flags
+      units : unitless
+      datatype : logical
+      default_value : .false.
 
 ################################################################################
 #                    Category 1.5: General Parameters (cont)                   #

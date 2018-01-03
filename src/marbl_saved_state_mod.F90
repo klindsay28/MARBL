@@ -17,6 +17,7 @@ Contains
     use marbl_interface_private_types, only : marbl_interior_saved_state_indexing_type
     use marbl_logging, only : marbl_log_type
     use marbl_kinds_mod, only : char_len
+    use marbl_settings_mod, only : lNK_shadow_tracers
 
 
     type(marbl_saved_state_type), intent(inout) :: surface_state
@@ -57,6 +58,20 @@ Contains
     if (marbl_status_log%labort_marbl) then
       call marbl_status_log%log_error_trace("add_state(PH_SURF_ALT_CO2)", subname)
       return
+    end if
+
+    if (lNK_shadow_tracers) then
+      lname = 'surface pH (shadow)'
+      sname = 'PH_SURF_SHADOW'
+      units = 'pH'
+      vgrid = 'none'
+      rank  = 2
+      call surface_state%add_state(lname, sname, units, vgrid, rank,            &
+           surf_ind%ph_shadow_surf, marbl_status_log)
+      if (marbl_status_log%labort_marbl) then
+        call marbl_status_log%log_error_trace("add_state(PH_SURF_SHADOW)", subname)
+        return
+      end if
     end if
 
     call interior_state%construct(num_interior_forcing, num_levels)

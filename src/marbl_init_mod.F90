@@ -152,7 +152,6 @@ contains
                                 marbl_tracer_cnt)
 
     use marbl_settings_mod, only : ciso_on
-    use marbl_settings_mod, only : lvariable_PtoC
     use marbl_settings_mod, only : autotrophs
     use marbl_settings_mod, only : zooplankton
     use marbl_settings_mod, only : tracer_restore_vars
@@ -176,7 +175,7 @@ contains
 
     ! Construct tracer indices
     allocate(tracer_indices)
-    call tracer_indices%construct(ciso_on, lvariable_PtoC, autotrophs, zooplankton, &
+    call tracer_indices%construct(autotrophs, zooplankton, &
                                   marbl_status_log, marbl_tracer_cnt)
     if (marbl_status_log%labort_marbl) then
       call marbl_status_log%log_error_trace("tracer_indices%construct", subname)
@@ -512,7 +511,8 @@ contains
     marbl_tracer_metadata%short_name = short_name
     marbl_tracer_metadata%long_name  = long_name
     if ((trim(short_name) == "ALK") .or. &
-        (trim(short_name) == "ALK_ALT_CO2")) then
+        (trim(short_name) == "ALK_ALT_CO2") .or. &
+        (trim(short_name) == "ALK_SHADOW")) then
        marbl_tracer_metadata%units      = 'meq/m^3'
        marbl_tracer_metadata%tend_units = 'meq/m^3/s'
        marbl_tracer_metadata%flux_units = 'meq/m^3 cm/s'
@@ -533,6 +533,8 @@ contains
     !  initialize non-autotroph tracer_d values and accumulate
     !  non_living_biomass_ecosys_tracer_cnt
     !-----------------------------------------------------------------------
+
+    use marbl_settings_mod, only : lNK_shadow_tracers
 
     implicit none
 
@@ -574,6 +576,13 @@ contains
                marbl_tracer_metadata(marbl_tracer_indices%dic_alt_co2_ind))
     call marbl_init_non_autotroph_tracer_metadata('ALK_ALT_CO2', 'Alkalinity, Alternative CO2', &
                marbl_tracer_metadata(marbl_tracer_indices%alk_alt_co2_ind))
+
+    if (lNK_shadow_tracers) then
+      call marbl_init_non_autotroph_tracer_metadata('DIC_SHADOW', 'Dissolved Inorganic Carbon, Shadow', &
+                 marbl_tracer_metadata(marbl_tracer_indices%dic_shadow_ind))
+      call marbl_init_non_autotroph_tracer_metadata('ALK_SHADOW', 'Alkalinity, Shadow', &
+                 marbl_tracer_metadata(marbl_tracer_indices%alk_shadow_ind))
+    end if
 
   end subroutine marbl_init_non_autotroph_tracers_metadata
 

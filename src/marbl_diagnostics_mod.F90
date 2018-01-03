@@ -322,6 +322,8 @@ module marbl_diagnostics_mod
      integer(int_kind) :: NHy_FLUX
      integer(int_kind) :: NHx_SURFACE_EMIS
 
+     integer(int_kind) :: DIC_GAS_FLUX_SHADOW_CO2
+
      integer(int_kind) :: CISO_DI13C_GAS_FLUX       ! di13c flux
      integer(int_kind) :: CISO_DI14C_GAS_FLUX       ! di14c flux
      integer(int_kind) :: CISO_DI13C_AS_GAS_FLUX    ! air-sea di13c flux
@@ -355,6 +357,7 @@ contains
        marbl_surface_forcing_diags,  &
        marbl_status_log)
 
+    use marbl_settings_mod, only : lNK_shadow_tracers
     use marbl_settings_mod, only : ciso_on
 
     type(marbl_domain_type)           , intent(in)    :: marbl_domain
@@ -750,6 +753,24 @@ contains
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
+      end if
+
+      !-----------------------------------------------------------------------
+      !  2D fields related to NK shadow tracers
+      !-----------------------------------------------------------------------
+
+      if (lNK_shadow_tracers) then
+        lname    = 'DIC Surface Gas Flux, shadow'
+        sname    = 'FG_SHADOW_CO2'
+        units    = 'mmol/m^3 cm/s'
+        vgrid    = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+             ind%DIC_GAS_FLUX_SHADOW_CO2, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
       end if
 
       !-----------------------------------------------------------------------
@@ -3500,6 +3521,7 @@ contains
     use marbl_interface_private_types , only : marbl_surface_saved_state_indexing_type
     use marbl_settings_mod   , only : lflux_gas_o2
     use marbl_settings_mod   , only : lflux_gas_co2
+    use marbl_settings_mod   , only : lNK_shadow_tracers
     use marbl_constants_mod  , only : mpercm
 
     implicit none
@@ -3556,6 +3578,7 @@ contains
          o2sat             => surface_forcing_internal%o2sat,                                   &
          nhx_surface_emis  => surface_forcing_internal%nhx_surface_emis,                        &
 
+         flux_shadow_co2   => surface_forcing_internal%flux_shadow_co2,                         &
 
          ph_prev           => saved_state%state(saved_state_ind%ph_surf)%field_2d,              &
          ph_prev_alt_co2   => saved_state%state(saved_state_ind%ph_alt_co2_surf)%field_2d,      &
@@ -3624,6 +3647,10 @@ contains
        diags(ind_diag%DIC_GAS_FLUX_ALT_CO2)%field_2d(:) = flux_alt_co2(:)
        diags(ind_diag%PH_ALT_CO2)%field_2d(:)           = ph_prev_alt_co2(:)
        diags(ind_diag%ATM_ALT_CO2)%field_2d(:)          = xco2_alt_co2(:)
+
+       if (lNK_shadow_tracers) then
+         diags(ind_diag%DIC_GAS_FLUX_SHADOW_CO2)%field_2d(:) = flux_shadow_co2(:)
+       endif
 
     endif  !  lflux_gas_co2
 

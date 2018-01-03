@@ -1871,6 +1871,7 @@ contains
     use marbl_nhx_surface_emis_mod, only : marbl_comp_nhx_surface_emis
     use marbl_settings_mod, only : lcompute_nhx_surface_emis
     use marbl_settings_mod, only : xkw_coeff
+    use marbl_settings_mod, only : lNK_shadow_tracers
     use marbl_ciso_mod, only : marbl_ciso_set_surface_forcing
 
     implicit none
@@ -1905,13 +1906,14 @@ contains
     real (r8)          :: o2sat_1atm(num_elements)       ! o2 saturation @ 1 atm (mmol/m^3)
     real (r8)          :: totalChl_loc(num_elements)     ! local value of totalChl
     real (r8)          :: flux_o2_loc(num_elements)      ! local value of o2 flux
-    real (r8)          :: co3_tmp(num_elements)          ! temporary, for computing sflux derivatives
-    real (r8)          :: co2star_tmp(num_elements)      ! temporary, for computing sflux derivatives
-    real (r8)          :: dco2star_pos_inc(num_elements) ! temporary, for computing sflux derivatives
-    real (r8)          :: dco2star_neg_inc(num_elements) ! temporary, for computing sflux derivatives
-    real (r8)          :: pco2surf_tmp(num_elements)     ! temporary, for computing sflux derivatives
-    real (r8)          :: dpco2_tmp(num_elements)        ! temporary, for computing sflux derivatives
-    real (r8)          :: ph_tmp(num_elements)           ! temporary, for computing sflux derivatives
+    real (r8)          :: co3_tmp(num_elements)          ! temporary, for computing sflux shadow values and derivatives
+    real (r8)          :: co2star_tmp(num_elements)      ! temporary, for computing sflux shadow values and derivatives
+    real (r8)          :: dco2star_tmp(num_elements)     ! temporary, for computing sflux shadow values and derivatives
+    real (r8)          :: dco2star_pos_inc(num_elements) ! temporary, for computing sflux shadow values and derivatives
+    real (r8)          :: dco2star_neg_inc(num_elements) ! temporary, for computing sflux shadow values and derivatives
+    real (r8)          :: pco2surf_tmp(num_elements)     ! temporary, for computing sflux shadow values and derivatives
+    real (r8)          :: dpco2_tmp(num_elements)        ! temporary, for computing sflux shadow values and derivatives
+    real (r8)          :: ph_tmp(num_elements)           ! temporary, for computing sflux shadow values and derivatives
     type(co2calc_coeffs_type) :: co2calc_coeffs(num_elements)
     type(co2calc_state_type)  :: co2calc_state(num_elements)
     !-----------------------------------------------------------------------
@@ -1952,6 +1954,8 @@ contains
          flux_alt_co2         => surface_forcing_internal%flux_alt_co2(:),                          &
          nhx_surface_emis     => surface_forcing_internal%nhx_surface_emis(:),                      &
 
+         flux_shadow_co2      => surface_forcing_internal%flux_shadow_co2(:),                       &
+
          stf                  => surface_tracer_fluxes(:,:),                                        &
 
          ph_prev_surf         => saved_state%state(saved_state_ind%ph_surf)%field_2d,               &
@@ -1967,6 +1971,8 @@ contains
          dic_alt_co2_ind   => marbl_tracer_indices%dic_alt_co2_ind,                             &
          alk_ind           => marbl_tracer_indices%alk_ind,                                     &
          alk_alt_co2_ind   => marbl_tracer_indices%alk_alt_co2_ind,                             &
+         dic_shadow_ind    => marbl_tracer_indices%dic_shadow_ind,                              &
+         alk_shadow_ind    => marbl_tracer_indices%alk_shadow_ind,                              &
 
          pv_surf_fields       => surface_forcing_share%pv_surf_fields(:),                           & ! out
          dic_surf_fields      => surface_forcing_share%dic_surf_fields(:),                          & ! out
@@ -2089,8 +2095,8 @@ contains
                marbl_status_log     = marbl_status_log)
 
           if (marbl_status_log%labort_marbl) then
-             call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
-             return
+            call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+            return
           end if
 
           flux_co2(:) = pv_co2(:) * dco2star(:)
@@ -2135,7 +2141,7 @@ contains
                ta                  = surface_vals(:,alk_alt_co2_ind), &
                co2calc_state       = co2calc_state)
 
-          ! Note the following computes a new ph_prev_alt_co2
+          ! Note the following computes a new ph_prev_alt_co2_surf
           ! pass in sections of surface_input_forcings instead of associated vars because of problems with intel/15.0.3
           call marbl_co2calc_surf( &
                num_elements         = num_elements, &
@@ -2154,10 +2160,10 @@ contains
                ph                   = ph_prev_alt_co2_surf, &
                marbl_status_log     = marbl_status_log)
 
-            if (marbl_status_log%labort_marbl) then
-               call marbl_status_log%log_error_trace('co2calc_surf() with flux_alt_co2', subname)
-               return
-            end if
+          if (marbl_status_log%labort_marbl) then
+            call marbl_status_log%log_error_trace('co2calc_surf() with flux_alt_co2', subname)
+            return
+          end if
 
           flux_alt_co2(:) = pv_co2(:) * dco2star_alt(:)
 
@@ -2169,6 +2175,68 @@ contains
           stf(:, dic_ind)         = stf(:, dic_ind)         + flux_co2(:)
           stf(:, dic_alt_co2_ind) = stf(:, dic_alt_co2_ind) + FLUX_ALT_CO2(:)
 
+          !-----------------------------------------------------------------------
+          !  Set flux_shadow_co2, if NK shadow tracers are enabled
+          !  saved_state%state(saved_state_ind%ph_shadow_surf)%field_2d is
+          !    written to and read from ph_tmp instead of using an association to
+          !    ph_prev_shadow_co2 because NAG in debug mode generates a runtime
+          !    error at the association statement when ph_shadow_surf is 0
+          !-----------------------------------------------------------------------
+
+          if (lNK_shadow_tracers) then
+            ph_tmp = saved_state%state(saved_state_ind%ph_shadow_surf)%field_2d
+
+            where (ph_tmp(:) /= c0)
+              phlo(:) = ph_tmp(:) - del_ph
+              phhi(:) = ph_tmp(:) + del_ph
+            elsewhere
+              phlo(:) = phlo_surf_init
+              phhi(:) = phhi_surf_init
+            end where
+
+            call marbl_co2calc_state_set_dic( &
+                 num_elements        = num_elements, &
+                 num_active_elements = num_elements, &
+                 dic                 = surface_vals(:,dic_shadow_ind), &
+                 co2calc_state       = co2calc_state)
+
+            call marbl_co2calc_state_set_ta( &
+                 num_elements        = num_elements, &
+                 num_active_elements = num_elements, &
+                 ta                  = surface_vals(:,alk_shadow_ind), &
+                 co2calc_state       = co2calc_state)
+
+            ! Note the following computes a new ph_tmp
+            ! pass in sections of surface_input_forcings instead of associated vars because of problems with intel/15.0.3
+            call marbl_co2calc_surf( &
+                 num_elements         = num_elements, &
+                 lcomp_co2calc_coeffs = .false., &
+                 co2calc_state_in     = co2calc_state, &
+                 atmpres              = surface_input_forcings(ind%atm_pressure_id)%field_0d, &
+                 xco2_in              = surface_input_forcings(ind%xco2_id)%field_0d, &
+                 phlo                 = phlo, &
+                 phhi                 = phhi, &
+                 co2calc_coeffs       = co2calc_coeffs, &
+                 co3                  = co3_tmp, &
+                 co2star              = co2star_tmp, &
+                 dco2star             = dco2star_tmp, &
+                 pco2surf             = pco2surf_tmp, &
+                 dpco2                = dpco2_tmp, &
+                 ph                   = ph_tmp, &
+                 marbl_status_log     = marbl_status_log)
+
+            if (marbl_status_log%labort_marbl) then
+              call marbl_status_log%log_error_trace('co2calc_surf() with flux_shadow_co2', subname)
+              return
+            end if
+
+            saved_state%state(saved_state_ind%ph_shadow_surf)%field_2d = ph_tmp
+
+            flux_shadow_co2(:) = pv_co2(:) * dco2star_tmp(:)
+
+            stf(:, dic_shadow_ind)  = stf(:, dic_shadow_ind) + flux_shadow_co2(:)
+          end if
+
           if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_SF_DIC_alt_co2_d_DIC_alt_co2)%compute_now) then
              ! centered finite difference approximation
 
@@ -2176,6 +2244,12 @@ contains
                   num_elements        = num_elements, &
                   num_active_elements = num_elements, &
                   dic                 = surface_vals(:,dic_alt_co2_ind) + 0.5_r8, &
+                  co2calc_state       = co2calc_state)
+
+             call marbl_co2calc_state_set_ta( &
+                  num_elements        = num_elements, &
+                  num_active_elements = num_elements, &
+                  ta                  = surface_vals(:,alk_alt_co2_ind), &
                   co2calc_state       = co2calc_state)
 
              call marbl_co2calc_surf( &
@@ -2196,8 +2270,8 @@ contains
                   marbl_status_log     = marbl_status_log)
 
              if (marbl_status_log%labort_marbl) then
-                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
-                return
+               call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+               return
              end if
 
              call marbl_co2calc_state_set_dic( &
@@ -2224,10 +2298,14 @@ contains
                   marbl_status_log     = marbl_status_log)
 
              if (marbl_status_log%labort_marbl) then
-                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
-                return
+               call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+               return
              end if
 
+             d_sf_dic_alt_co2_d_dic_alt_co2(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
+          end if
+
+          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_SF_DIC_alt_co2_d_ALK_alt_co2)%compute_now) then
              ! reset dic in co2calc_state
              call marbl_co2calc_state_set_dic( &
                   num_elements        = num_elements, &
@@ -2235,10 +2313,6 @@ contains
                   dic                 = surface_vals(:,dic_alt_co2_ind), &
                   co2calc_state       = co2calc_state)
 
-             d_sf_dic_alt_co2_d_dic_alt_co2(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
-          end if
-
-          if (surface_forcing_diags%diags(marbl_surface_forcing_diag_ind%d_SF_DIC_alt_co2_d_ALK_alt_co2)%compute_now) then
              ! centered finite difference approximation
 
              call marbl_co2calc_state_set_ta( &
@@ -2265,8 +2339,8 @@ contains
                   marbl_status_log     = marbl_status_log)
 
              if (marbl_status_log%labort_marbl) then
-                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
-                return
+               call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+               return
              end if
 
              call marbl_co2calc_state_set_ta( &
@@ -2293,16 +2367,9 @@ contains
                   marbl_status_log     = marbl_status_log)
 
              if (marbl_status_log%labort_marbl) then
-                call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
-                return
+               call marbl_status_log%log_error_trace('co2calc_surf() with flux_co2', subname)
+               return
              end if
-
-             ! reset ta in co2calc_state
-             call marbl_co2calc_state_set_ta( &
-                  num_elements        = num_elements, &
-                  num_active_elements = num_elements, &
-               ta                  = surface_vals(:,alk_alt_co2_ind), &
-               co2calc_state       = co2calc_state)
 
              d_sf_dic_alt_co2_d_alk_alt_co2(:) = pv_co2(:) * (dco2star_pos_inc(:) - dco2star_neg_inc(:))
             end if
@@ -2373,6 +2440,9 @@ contains
 
     stf(:, alk_ind)         = stf(:, alk_ind)         + stf(:, nh4_ind) - stf(:, no3_ind)
     stf(:, alk_alt_co2_ind) = stf(:, alk_alt_co2_ind) + stf(:, nh4_ind) - stf(:, no3_ind)
+    if (lNK_shadow_tracers) then
+      stf(:, alk_shadow_ind)  = stf(:, alk_shadow_ind)  + stf(:, nh4_ind) - stf(:, no3_ind)
+    end if
 
     !-----------------------------------------------------------------------
     ! Set surface forcing diagnostics
@@ -4565,6 +4635,8 @@ contains
              P_CaCO3_ALT_CO2_remin, other_remin, PON_remin, interior_restore,   &
              O2_loc, o2_production, o2_consumption, dtracers, marbl_tracer_indices)
 
+    use marbl_settings_mod, only : lNK_shadow_tracers
+
     integer                                  , intent(in)  :: auto_cnt
     integer                                  , intent(in)  :: zoo_cnt
     type(autotroph_type)                     , intent(in)  :: autotrophs(:)
@@ -4663,7 +4735,9 @@ contains
          dop_ind           => marbl_tracer_indices%dop_ind,         &
          dopr_ind          => marbl_tracer_indices%dopr_ind,        &
          donr_ind          => marbl_tracer_indices%donr_ind,        &
-         docr_ind          => marbl_tracer_indices%docr_ind         &
+         docr_ind          => marbl_tracer_indices%docr_ind,        &
+         dic_shadow_ind    => marbl_tracer_indices%dic_shadow_ind,  &
+         alk_shadow_ind    => marbl_tracer_indices%alk_shadow_ind   &
          )
 
     !-----------------------------------------------------------------------
@@ -4806,6 +4880,10 @@ contains
 
     dtracers(dic_alt_co2_ind) = dtracers(dic_ind) + (P_CaCO3_ALT_CO2_remin - P_CaCO3_remin)
 
+    if (lNK_shadow_tracers) then
+      dtracers(dic_shadow_ind) = dtracers(dic_ind)
+    end if
+
     !-----------------------------------------------------------------------
     !  alkalinity
     !-----------------------------------------------------------------------
@@ -4820,6 +4898,10 @@ contains
     end do
 
     dtracers(alk_alt_co2_ind) = dtracers(alk_ind) + c2 * (P_CaCO3_ALT_CO2_remin - P_CaCO3_remin)
+
+    if (lNK_shadow_tracers) then
+      dtracers(alk_shadow_ind) = dtracers(alk_ind)
+    end if
 
     !-----------------------------------------------------------------------
     !  oxygen
