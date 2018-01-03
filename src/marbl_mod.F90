@@ -3874,6 +3874,12 @@ contains
     !-----------------------------------------------------------------------
     integer  :: subcol_ind
     real(r8) :: work
+    real(r8) :: DOC_remin_rate  ! remineralization rate (1/sec)
+    real(r8) :: DOCr_remin_rate ! remineralization rate (1/sec)
+    real(r8) :: DON_remin_rate  ! remineralization rate (1/sec)
+    real(r8) :: DONr_remin_rate ! remineralization rate (1/sec)
+    real(r8) :: DOP_remin_rate  ! remineralization rate (1/sec)
+    real(r8) :: DOPr_remin_rate ! remineralization rate (1/sec)
     !-----------------------------------------------------------------------
 
     associate(                                                               &
@@ -3890,19 +3896,13 @@ contains
          zoo_loss_doc    => zooplankton_secondary_species(:)%zoo_loss_doc  , & ! input
          zoo_graze_doc   => zooplankton_secondary_species(:)%zoo_graze_doc , & ! input
          DOC_prod        => dissolved_organic_matter%DOC_prod              , & ! output production of DOC (mmol C/m^3/sec)
-         DOC_remin_rate  => dissolved_organic_matter%DOC_remin_rate        , & ! output remineralization rate of DOC (1/sec)
          DOC_remin       => dissolved_organic_matter%DOC_remin             , & ! output remineralization of DOC (mmol C/m^3/sec)
-         DOCr_remin_rate => dissolved_organic_matter%DOCr_remin_rate       , & ! output remineralization rate of DOCr
          DOCr_remin      => dissolved_organic_matter%DOCr_remin            , & ! output remineralization of DOCr
          DON_prod        => dissolved_organic_matter%DON_prod              , & ! output production of DON
-         DON_remin_rate  => dissolved_organic_matter%DON_remin_rate        , & ! output remineralization rate of DON
          DON_remin       => dissolved_organic_matter%DON_remin             , & ! output remineralization of DON
-         DONr_remin_rate => dissolved_organic_matter%DONr_remin_rate       , & ! output remineralization rate of DONr
          DONr_remin      => dissolved_organic_matter%DONr_remin            , & ! output remineralization of DONr
          DOP_prod        => dissolved_organic_matter%DOP_prod              , & ! output production of DOP
-         DOP_remin_rate  => dissolved_organic_matter%DOP_remin_rate        , & ! output remineralization rate of DOP
          DOP_remin       => dissolved_organic_matter%DOP_remin             , & ! output remineralization of DOP
-         DOPr_remin_rate => dissolved_organic_matter%DOPr_remin_rate       , & ! output remineralization rate of DOPr
          DOPr_remin      => dissolved_organic_matter%DOPr_remin              & ! output remineralization of DOPr
          )
 

@@ -147,19 +147,13 @@ module marbl_interface_private_types
 
   type, public :: dissolved_organic_matter_type
      real (r8) :: DOC_prod         ! production of DOC (mmol C/m^3/sec)
-     real (r8) :: DOC_remin_rate   ! remineralization rate of DOC (1/sec)
      real (r8) :: DOC_remin        ! remineralization of DOC (mmol C/m^3/sec)
-     real (r8) :: DOCr_remin_rate  ! remineralization rate of DOCr
      real (r8) :: DOCr_remin       ! remineralization of DOCr
      real (r8) :: DON_prod         ! production of DON
-     real (r8) :: DON_remin_rate   ! remineralization rate of DON
      real (r8) :: DON_remin        ! remineralization of DON
-     real (r8) :: DONr_remin_rate  ! remineralization rate of DONr
      real (r8) :: DONr_remin       ! remineralization of DONr
      real (r8) :: DOP_prod         ! production of DOP
-     real (r8) :: DOP_remin_rate   ! remineralization rate of DOP
      real (r8) :: DOP_remin        ! remineralization of DOP
-     real (r8) :: DOPr_remin_rate  ! remineralization rate of DOPr
      real (r8) :: DOPr_remin       ! remineralization of DOPr
   end type dissolved_organic_matter_type
 

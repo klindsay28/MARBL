@@ -133,19 +133,13 @@ module marbl_diagnostics_mod
     integer(int_kind) :: photoC_TOT
     integer(int_kind) :: photoC_NO3_TOT
     integer(int_kind) :: DOC_prod
-    integer(int_kind) :: DOC_remin_rate
     integer(int_kind) :: DOC_remin
-    integer(int_kind) :: DOCr_remin_rate
     integer(int_kind) :: DOCr_remin
     integer(int_kind) :: DON_prod
-    integer(int_kind) :: DON_remin_rate
     integer(int_kind) :: DON_remin
-    integer(int_kind) :: DONr_remin_rate
     integer(int_kind) :: DONr_remin
     integer(int_kind) :: DOP_prod
-    integer(int_kind) :: DOP_remin_rate
     integer(int_kind) :: DOP_remin
-    integer(int_kind) :: DOPr_remin_rate
     integer(int_kind) :: DOPr_remin
     integer(int_kind) :: Fe_scavenge
     integer(int_kind) :: Fe_scavenge_rate
@@ -1594,18 +1588,6 @@ contains
         return
       end if
 
-      lname = 'DOC Remineralization Rate'
-      sname = 'DOC_remin_rate'
-      units = '1/s'
-      vgrid = 'layer_avg'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%DOC_remin_rate, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
       lname = 'DOC Remineralization'
       sname = 'DOC_remin'
       units = 'mmol/m^3/s'
@@ -1613,18 +1595,6 @@ contains
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
            ind%DOC_remin, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
-      lname = 'DOCr Remineralization Rate'
-      sname = 'DOCr_remin_rate'
-      units = '1/s'
-      vgrid = 'layer_avg'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%DOCr_remin_rate, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
@@ -1654,18 +1624,6 @@ contains
         return
       end if
 
-      lname = 'DON Remineralization Rate'
-      sname = 'DON_remin_rate'
-      units = '1/s'
-      vgrid = 'layer_avg'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%DON_remin_rate, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
       lname = 'DON Remineralization'
       sname = 'DON_remin'
       units = 'mmol/m^3/s'
@@ -1673,18 +1631,6 @@ contains
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
            ind%DON_remin, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
-      lname = 'DONr Remineralization Rate'
-      sname = 'DONr_remin_rate'
-      units = '1/s'
-      vgrid = 'layer_avg'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%DONr_remin_rate, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
@@ -1714,18 +1660,6 @@ contains
         return
       end if
 
-      lname = 'DOP Remineralization Rate'
-      sname = 'DOP_remin_rate'
-      units = '1/s'
-      vgrid = 'layer_avg'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%DOP_remin_rate, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
       lname = 'DOP Remineralization'
       sname = 'DOP_remin'
       units = 'mmol/m^3/s'
@@ -1733,18 +1667,6 @@ contains
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
            ind%DOP_remin, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
-      lname = 'DOPr Remineralization Rate'
-      sname = 'DOPr_remin_rate'
-      units = '1/s'
-      vgrid = 'layer_avg'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%DOPr_remin_rate, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
@@ -4112,19 +4034,13 @@ contains
 
     do k = 1, km
        diags(ind%DOC_prod)%field_3d(k, 1)         = dissolved_organic_matter(k)%DOC_prod
-       diags(ind%DOC_remin_rate)%field_3d(k, 1)   = dissolved_organic_matter(k)%DOC_remin_rate
        diags(ind%DOC_remin)%field_3d(k, 1)        = dissolved_organic_matter(k)%DOC_remin
-       diags(ind%DOCr_remin_rate)%field_3d(k, 1)  = dissolved_organic_matter(k)%DOCr_remin_rate
        diags(ind%DOCr_remin)%field_3d(k, 1)       = dissolved_organic_matter(k)%DOCr_remin
        diags(ind%DON_prod)%field_3d(k, 1)         = dissolved_organic_matter(k)%DON_prod
-       diags(ind%DON_remin_rate)%field_3d(k, 1)   = dissolved_organic_matter(k)%DON_remin_rate
        diags(ind%DON_remin)%field_3d(k, 1)        = dissolved_organic_matter(k)%DON_remin
-       diags(ind%DONr_remin_rate)%field_3d(k, 1)  = dissolved_organic_matter(k)%DONr_remin_rate
        diags(ind%DONr_remin)%field_3d(k, 1)       = dissolved_organic_matter(k)%DONr_remin
        diags(ind%DOP_prod)%field_3d(k, 1)         = dissolved_organic_matter(k)%DOP_prod
-       diags(ind%DOP_remin_rate)%field_3d(k, 1)   = dissolved_organic_matter(k)%DOP_remin_rate
        diags(ind%DOP_remin)%field_3d(k, 1)        = dissolved_organic_matter(k)%DOP_remin
-       diags(ind%DOPr_remin_rate)%field_3d(k, 1)  = dissolved_organic_matter(k)%DOPr_remin_rate
        diags(ind%DOPr_remin)%field_3d(k, 1)       = dissolved_organic_matter(k)%DOPr_remin
     end do
 
