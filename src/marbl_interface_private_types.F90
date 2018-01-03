@@ -54,8 +54,6 @@ module marbl_interface_private_types
   type, public :: marbl_surface_forcing_internal_type
      real (r8), allocatable, dimension(:)   :: piston_velocity
      real (r8), allocatable, dimension(:)   :: flux_co2
-     real (r8), allocatable, dimension(:)   :: d_sf_dic_alt_co2_d_dic_alt_co2
-     real (r8), allocatable, dimension(:)   :: d_sf_dic_alt_co2_d_alk_alt_co2
      real (r8), allocatable, dimension(:)   :: flux_alt_co2 ! tracer flux alternative CO2 (nmol/cm^2/s)
      real (r8), allocatable, dimension(:)   :: co2star
      real (r8), allocatable, dimension(:)   :: dco2star
@@ -72,7 +70,9 @@ module marbl_interface_private_types
      real (r8), allocatable, dimension(:)   :: pv_co2       ! piston velocity (cm/s)
      real (r8), allocatable, dimension(:)   :: o2sat        ! used O2 saturation (mmol/m^3)
      real (r8), allocatable, dimension(:)   :: nhx_surface_emis
-     real (r8), allocatable, dimension(:)   :: flux_shadow_co2 ! tracer flux shadow CO2 (nmol/cm^2/s)
+     real (r8), allocatable, dimension(:)   :: flux_co2_shadow ! shadow tracer flux (nmol/cm^2/s)
+     real (r8), allocatable, dimension(:)   :: d_sf_dic_shadow_d_dic_shadow
+     real (r8), allocatable, dimension(:)   :: d_sf_dic_shadow_d_alk_shadow
    contains
      procedure, public :: construct => marbl_surface_forcing_internal_constructor
      procedure, public :: destruct => marbl_surface_forcing_internal_destructor
@@ -496,8 +496,6 @@ contains
 
     allocate(this%piston_velocity (num_elements))
     allocate(this%flux_co2        (num_elements))
-    allocate(this%d_sf_dic_alt_co2_d_dic_alt_co2(num_elements))
-    allocate(this%d_sf_dic_alt_co2_d_alk_alt_co2(num_elements))
     allocate(this%flux_alt_co2    (num_elements))
     allocate(this%co2star         (num_elements))
     allocate(this%dco2star        (num_elements))
@@ -514,7 +512,10 @@ contains
     allocate(this%pv_co2          (num_elements))
     allocate(this%o2sat           (num_elements))
     allocate(this%nhx_surface_emis(num_elements))
-    allocate(this%flux_shadow_co2 (num_elements))
+
+    allocate(this%flux_co2_shadow(num_elements))
+    allocate(this%d_sf_dic_shadow_d_dic_shadow(num_elements))
+    allocate(this%d_sf_dic_shadow_d_alk_shadow(num_elements))
 
   end subroutine marbl_surface_forcing_internal_constructor
 
@@ -543,7 +544,9 @@ contains
       deallocate(this%pv_co2          )
       deallocate(this%o2sat           )
       deallocate(this%nhx_surface_emis)
-      deallocate(this%flux_shadow_co2 )
+      deallocate(this%flux_co2_shadow )
+      deallocate(this%d_sf_dic_shadow_d_dic_shadow)
+      deallocate(this%d_sf_dic_shadow_d_alk_shadow)
     end if
 
   end subroutine marbl_surface_forcing_internal_destructor
