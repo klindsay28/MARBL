@@ -192,13 +192,9 @@ contains
       allocate(tracer_restore_vars(tracer_indices%total_cnt))
 
     ! Set up tracer metadata
-    call marbl_init_tracer_metadata(tracer_metadata, tracer_indices, marbl_status_log)
-    if (marbl_status_log%labort_marbl) then
-      call marbl_status_log%log_error_trace("marbl_init_tracer_metadata()", subname)
-      return
-    end if
+    call marbl_init_tracer_metadata(tracer_indices, tracer_metadata)
     if (ciso_on) then
-       call marbl_ciso_init_tracer_metadata(tracer_metadata, tracer_indices)
+       call marbl_ciso_init_tracer_metadata(tracer_indices, tracer_metadata)
     end if
 
     ! Log what tracers are being used
@@ -228,24 +224,20 @@ contains
 
   !***********************************************************************
 
-  subroutine marbl_init_tracer_metadata(marbl_tracer_metadata,                &
-             marbl_tracer_indices, marbl_status_log)
+  subroutine marbl_init_tracer_metadata(marbl_tracer_indices, marbl_tracer_metadata)
 
-    !  Set tracer and forcing metadata
+    !  Set tracer metadata
 
     use marbl_settings_mod, only : lecovars_full_depth_tavg
 
     implicit none
 
-    type (marbl_tracer_metadata_type), intent(out)   :: marbl_tracer_metadata(:)   ! descriptors for each tracer
     type(marbl_tracer_index_type)    , intent(in)    :: marbl_tracer_indices
-    type(marbl_log_type)             , intent(inout) :: marbl_status_log
+    type (marbl_tracer_metadata_type), intent(out)   :: marbl_tracer_metadata(:)   ! descriptors for each tracer
 
     !-----------------------------------------------------------------------
     !  local variables
     !-----------------------------------------------------------------------
-
-    character(len=*), parameter :: subname = 'marbl_init_mod:marbl_init_tracer_metadata'
 
     integer (int_kind) :: n        ! index for looping over tracers
     integer (int_kind) :: zoo_ind  ! zooplankton functional group index
@@ -495,7 +487,7 @@ contains
   !***********************************************************************
 
   subroutine marbl_init_non_autotroph_tracer_metadata(short_name, long_name, &
-                                                      marbl_tracer_metadata)
+                                                      marbl_tracer_metadata, base_units)
 
     !-----------------------------------------------------------------------
     !  initialize non-autotroph tracer_d values and accumulate
@@ -507,20 +499,22 @@ contains
     character(len=*),                 intent(in)    :: short_name
     character(len=*),                 intent(in)    :: long_name
     type(marbl_tracer_metadata_type), intent(inout) :: marbl_tracer_metadata
+    character(len=*), optional,       intent(in)    :: base_units
+
+    character(len=char_len) :: base_units_loc
 
     marbl_tracer_metadata%short_name = short_name
     marbl_tracer_metadata%long_name  = long_name
-    if ((trim(short_name) == "ALK") .or. &
-        (trim(short_name) == "ALK_ALT_CO2") .or. &
-        (trim(short_name) == "ALK_SHADOW")) then
-       marbl_tracer_metadata%units      = 'meq/m^3'
-       marbl_tracer_metadata%tend_units = 'meq/m^3/s'
-       marbl_tracer_metadata%flux_units = 'meq/m^3 cm/s'
+
+    if (present(base_units)) then
+       base_units_loc = base_units
     else
-       marbl_tracer_metadata%units      = 'mmol/m^3'
-       marbl_tracer_metadata%tend_units = 'mmol/m^3/s'
-       marbl_tracer_metadata%flux_units = 'mmol/m^3 cm/s'
+       base_units_loc = 'mmol/m^3'
     endif
+
+    marbl_tracer_metadata%units      = trim(base_units_loc)
+    marbl_tracer_metadata%tend_units = trim(base_units_loc) // '/s'
+    marbl_tracer_metadata%flux_units = trim(base_units_loc) // ' cm/s'
 
   end subroutine marbl_init_non_autotroph_tracer_metadata
 
@@ -558,7 +552,7 @@ contains
     call marbl_init_non_autotroph_tracer_metadata('DIC', 'Dissolved Inorganic Carbon',    &
                marbl_tracer_metadata(marbl_tracer_indices%dic_ind))
     call marbl_init_non_autotroph_tracer_metadata('ALK', 'Alkalinity',                    &
-               marbl_tracer_metadata(marbl_tracer_indices%alk_ind))
+               marbl_tracer_metadata(marbl_tracer_indices%alk_ind), base_units='meq/m^3')
     call marbl_init_non_autotroph_tracer_metadata('DOC', 'Dissolved Organic Carbon',      &
                marbl_tracer_metadata(marbl_tracer_indices%doc_ind))
     call marbl_init_non_autotroph_tracer_metadata('DON', 'Dissolved Organic Nitrogen',    &
@@ -575,14 +569,26 @@ contains
     call marbl_init_non_autotroph_tracer_metadata('DIC_ALT_CO2', 'Dissolved Inorganic Carbon, Alternative CO2', &
                marbl_tracer_metadata(marbl_tracer_indices%dic_alt_co2_ind))
     call marbl_init_non_autotroph_tracer_metadata('ALK_ALT_CO2', 'Alkalinity, Alternative CO2', &
-               marbl_tracer_metadata(marbl_tracer_indices%alk_alt_co2_ind))
+               marbl_tracer_metadata(marbl_tracer_indices%alk_alt_co2_ind), base_units='meq/m^3')
 
     if (lNK_shadow_tracers) then
       call marbl_init_non_autotroph_tracer_metadata('DIC_SHADOW', 'Dissolved Inorganic Carbon, Shadow', &
                  marbl_tracer_metadata(marbl_tracer_indices%dic_shadow_ind))
       call marbl_init_non_autotroph_tracer_metadata('ALK_SHADOW', 'Alkalinity, Shadow', &
-                 marbl_tracer_metadata(marbl_tracer_indices%alk_shadow_ind))
-    end if
+                 marbl_tracer_metadata(marbl_tracer_indices%alk_shadow_ind), base_units='meq/m^3')
+      call marbl_init_non_autotroph_tracer_metadata('DOC_SHADOW', 'Dissolved Organic Carbon, Shadow', &
+                 marbl_tracer_metadata(marbl_tracer_indices%doc_shadow_ind))
+      call marbl_init_non_autotroph_tracer_metadata('DON_SHADOW', 'Dissolved Organic Nitrogen, Shadow', &
+                 marbl_tracer_metadata(marbl_tracer_indices%don_shadow_ind))
+      call marbl_init_non_autotroph_tracer_metadata('DOP_SHADOW', 'Dissolved Organic Phosphorus, Shadow',  &
+                 marbl_tracer_metadata(marbl_tracer_indices%dop_shadow_ind))
+      call marbl_init_non_autotroph_tracer_metadata('DOPr_SHADOW', 'Refractory DOP, Shadow', &
+                 marbl_tracer_metadata(marbl_tracer_indices%dopr_shadow_ind))
+      call marbl_init_non_autotroph_tracer_metadata('DONr_SHADOW', 'Refractory DON, Shadow', &
+                 marbl_tracer_metadata(marbl_tracer_indices%donr_shadow_ind))
+      call marbl_init_non_autotroph_tracer_metadata('DOCr_SHADOW', 'Refractory DOC, Shadow', &
+                 marbl_tracer_metadata(marbl_tracer_indices%docr_shadow_ind))
+    endif
 
   end subroutine marbl_init_non_autotroph_tracers_metadata
 

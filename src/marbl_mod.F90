@@ -527,6 +527,7 @@ contains
     type(autotroph_secondary_species_type)   :: autotroph_secondary_species(autotroph_cnt, domain%km)
     type(zooplankton_secondary_species_type) :: zooplankton_secondary_species(zooplankton_cnt, domain%km)
     type(dissolved_organic_matter_type)      :: dissolved_organic_matter(domain%km)
+    type(dissolved_organic_matter_type)      :: dissolved_organic_matter_shadow(domain%km)
     type(carbonate_type)                     :: carbonate(domain%km)
 
     ! NOTE(bja, 2015-07) vectorization: arrays that are (n, k, c, i)
@@ -574,21 +575,11 @@ contains
          salinity            => interior_forcings(interior_forcing_indices%salinity_id)%field_1d(1,:),   &
          fesedflux           => interior_forcings(interior_forcing_indices%fesedflux_id)%field_1d(1,:),   &
 
-         po4_ind           => marbl_tracer_indices%po4_ind,         &
          no3_ind           => marbl_tracer_indices%no3_ind,         &
-         sio3_ind          => marbl_tracer_indices%sio3_ind,        &
          nh4_ind           => marbl_tracer_indices%nh4_ind,         &
          fe_ind            => marbl_tracer_indices%fe_ind,          &
          lig_ind           => marbl_tracer_indices%lig_ind,   &
-         o2_ind            => marbl_tracer_indices%o2_ind,          &
-         dic_ind           => marbl_tracer_indices%dic_ind,         &
-         dic_alt_co2_ind   => marbl_tracer_indices%dic_alt_co2_ind, &
-         doc_ind           => marbl_tracer_indices%doc_ind,         &
-         don_ind           => marbl_tracer_indices%don_ind,         &
-         dop_ind           => marbl_tracer_indices%dop_ind,         &
-         dopr_ind          => marbl_tracer_indices%dopr_ind,        &
-         donr_ind          => marbl_tracer_indices%donr_ind,        &
-         docr_ind          => marbl_tracer_indices%docr_ind         &
+         o2_ind            => marbl_tracer_indices%o2_ind           &
          )
 
     !-----------------------------------------------------------------------
@@ -679,7 +670,7 @@ contains
             zooplankton_secondary_species(:, k), autotroph_secondary_species(:, k),    &
             PAR%col_frac(:), PAR%interface(k-1,:), PAR%avg(k,:),                       &
             delta_z1, tracer_local(:, k), marbl_tracer_indices,                        &
-            dissolved_organic_matter(k))
+            dissolved_organic_matter(k), dissolved_organic_matter_shadow(k))
 
        call marbl_compute_scavenging(k, tracer_local(fe_ind, k),             &
             tracer_local(lig_ind, k), POC, P_CaCO3, P_SiO2, dust, P_iron,    &
@@ -732,6 +723,7 @@ contains
             autotroph_secondary_species(:, k), &
             zooplankton_secondary_species(:, k), &
             dissolved_organic_matter(k), &
+            dissolved_organic_matter_shadow(k), &
             nitrif(k), denitrif(k), sed_denitrif(k), &
             Fe_scavenge(k), Lig_prod(k), Lig_loss(k), &
             P_iron%remin(k), POC%remin(k), POP%remin(k), &
@@ -779,6 +771,7 @@ contains
          autotroph_secondary_species,                       &
          zooplankton_secondary_species,                     &
          dissolved_organic_matter,                          &
+         dissolved_organic_matter_shadow,                   &
          marbl_particulate_share,                           &
          PAR,                                               &
          PON_remin, PON_sed_loss,                           &
@@ -3836,12 +3829,13 @@ contains
 
   !***********************************************************************
 
-  subroutine marbl_compute_dissolved_organic_matter (k, auto_cnt, zoo_cnt,    &
-             PAR_nsubcols, autotrophs, zooplankton_secondary_species,          &
-             autotroph_secondary_species, PAR_col_frac, PAR_in, PAR_avg,      &
-             dz1, tracer_local, marbl_tracer_indices, dissolved_organic_matter)
+  subroutine marbl_compute_dissolved_organic_matter (k, auto_cnt, zoo_cnt,      &
+             PAR_nsubcols, autotrophs, zooplankton_secondary_species,           &
+             autotroph_secondary_species, PAR_col_frac, PAR_in, PAR_avg,        &
+             dz1, tracer_local, marbl_tracer_indices, dissolved_organic_matter, &
+             dissolved_organic_matter_shadow)
 
-    use marbl_settings_mod, only : Qfe_zoo
+
     use marbl_settings_mod, only : Q
     use marbl_settings_mod, only : DOC_remin_rate_light
     use marbl_settings_mod, only : DON_remin_rate_light
@@ -3853,6 +3847,8 @@ contains
     use marbl_settings_mod, only : DONr_remin_rate0
     use marbl_settings_mod, only : DOPr_remin_rate0
     use marbl_settings_mod, only : DOMr_remin_rate_photo
+    use marbl_settings_mod, only : lNK_shadow_tracers
+
 
     integer(int_kind)                       , intent(in)  :: k
     integer                                 , intent(in)  :: auto_cnt
@@ -3868,6 +3864,7 @@ contains
     real(r8)                                , intent(in)  :: tracer_local(:)
     type(marbl_tracer_index_type)           , intent(in)  :: marbl_tracer_indices
     type(dissolved_organic_matter_type)     , intent(out) :: dissolved_organic_matter
+    type(dissolved_organic_matter_type)     , intent(out) :: dissolved_organic_matter_shadow
 
     !-----------------------------------------------------------------------
     !  local variables
@@ -3963,6 +3960,39 @@ contains
       DOPr_remin = DOPr_loc * DOPr_remin_rate
 
     end associate
+
+    if (lNK_shadow_tracers) then
+
+      ! shadow DOM production is identical to the non-shadow values
+      ! it is not necessary to store it in the prod components of the derived type
+
+      ! shadow DOM remin is the based on the shadow tracers themselves,
+      ! using the same remin rates that are used for non-shadow tracers
+
+      associate( &
+           DOC_shadow_loc    => tracer_local(marbl_tracer_indices%doc_shadow_ind)  , &
+           DON_shadow_loc    => tracer_local(marbl_tracer_indices%don_shadow_ind)  , &
+           DOP_shadow_loc    => tracer_local(marbl_tracer_indices%dop_shadow_ind)  , &
+           DOCr_shadow_loc   => tracer_local(marbl_tracer_indices%docr_shadow_ind) , &
+           DONr_shadow_loc   => tracer_local(marbl_tracer_indices%donr_shadow_ind) , &
+           DOPr_shadow_loc   => tracer_local(marbl_tracer_indices%dopr_shadow_ind) , &
+           DOC_shadow_remin  => dissolved_organic_matter_shadow%DOC_remin          , &
+           DON_shadow_remin  => dissolved_organic_matter_shadow%DON_remin          , &
+           DOP_shadow_remin  => dissolved_organic_matter_shadow%DOP_remin          , &
+           DOCr_shadow_remin => dissolved_organic_matter_shadow%DOCr_remin         , &
+           DONr_shadow_remin => dissolved_organic_matter_shadow%DONr_remin         , &
+           DOPr_shadow_remin => dissolved_organic_matter_shadow%DOPr_remin           &
+        )
+
+        DOC_shadow_remin  = DOC_shadow_loc  * DOC_remin_rate
+        DON_shadow_remin  = DON_shadow_loc  * DON_remin_rate
+        DOP_shadow_remin  = DOP_shadow_loc  * DOP_remin_rate
+        DOCr_shadow_remin = DOCr_shadow_loc * DOCr_remin_rate
+        DONr_shadow_remin = DONr_shadow_loc * DONr_remin_rate
+        DOPr_shadow_remin = DOPr_shadow_loc * DOPr_remin_rate
+      end associate
+
+    end if
 
   end subroutine marbl_compute_dissolved_organic_matter
 
@@ -4457,12 +4487,12 @@ contains
 
   !***********************************************************************
 
-  subroutine marbl_compute_dtracer_local (auto_cnt, zoo_cnt, autotrophs,       &
-             zooplankton, autotroph_secondary_species,                  &
-             zooplankton_secondary_species, dissolved_organic_matter,           &
-             nitrif, denitrif, sed_denitrif, Fe_scavenge, Lig_prod, Lig_loss,   &
-             P_iron_remin, POC_remin, POP_remin, P_SiO2_remin, P_CaCO3_remin,   &
-             P_CaCO3_ALT_CO2_remin, other_remin, PON_remin, interior_restore,   &
+  subroutine marbl_compute_dtracer_local (auto_cnt, zoo_cnt, autotrophs,              &
+             zooplankton, autotroph_secondary_species, zooplankton_secondary_species, &
+             dissolved_organic_matter, dissolved_organic_matter_shadow,               &
+             nitrif, denitrif, sed_denitrif, Fe_scavenge, Lig_prod, Lig_loss,         &
+             P_iron_remin, POC_remin, POP_remin, P_SiO2_remin, P_CaCO3_remin,         &
+             P_CaCO3_ALT_CO2_remin, other_remin, PON_remin, interior_restore,         &
              O2_loc, o2_production, o2_consumption, dtracers, marbl_tracer_indices)
 
     use marbl_settings_mod, only : lNK_shadow_tracers
@@ -4474,6 +4504,7 @@ contains
     type(zooplankton_secondary_species_type) , intent(in)  :: zooplankton_secondary_species(:)
     type(autotroph_secondary_species_type)   , intent(in)  :: autotroph_secondary_species(:)
     type(dissolved_organic_matter_type)      , intent(in)  :: dissolved_organic_matter
+    type(dissolved_organic_matter_type)      , intent(in)  :: dissolved_organic_matter_shadow
     real(r8)                                 , intent(in)  :: nitrif
     real(r8)                                 , intent(in)  :: denitrif
     real(r8)                                 , intent(in)  :: sed_denitrif
@@ -4549,6 +4580,13 @@ contains
          DOP_remin       => dissolved_organic_matter%DOP_remin       , & ! remineralization of DOP
          DOPr_remin      => dissolved_organic_matter%DOPr_remin      , & ! remineralization of DOPr
 
+         DOC_shadow_remin  => dissolved_organic_matter_shadow%DOC_remin  , &
+         DOCr_shadow_remin => dissolved_organic_matter_shadow%DOCr_remin , &
+         DON_shadow_remin  => dissolved_organic_matter_shadow%DON_remin  , &
+         DONr_shadow_remin => dissolved_organic_matter_shadow%DONr_remin , &
+         DOP_shadow_remin  => dissolved_organic_matter_shadow%DOP_remin  , &
+         DOPr_shadow_remin => dissolved_organic_matter_shadow%DOPr_remin , &
+
          po4_ind           => marbl_tracer_indices%po4_ind,         &
          no3_ind           => marbl_tracer_indices%no3_ind,         &
          sio3_ind          => marbl_tracer_indices%sio3_ind,        &
@@ -4566,8 +4604,15 @@ contains
          dopr_ind          => marbl_tracer_indices%dopr_ind,        &
          donr_ind          => marbl_tracer_indices%donr_ind,        &
          docr_ind          => marbl_tracer_indices%docr_ind,        &
+
          dic_shadow_ind    => marbl_tracer_indices%dic_shadow_ind,  &
-         alk_shadow_ind    => marbl_tracer_indices%alk_shadow_ind   &
+         alk_shadow_ind    => marbl_tracer_indices%alk_shadow_ind,  &
+         doc_shadow_ind    => marbl_tracer_indices%doc_shadow_ind,  &
+         don_shadow_ind    => marbl_tracer_indices%don_shadow_ind,  &
+         dop_shadow_ind    => marbl_tracer_indices%dop_shadow_ind,  &
+         dopr_shadow_ind   => marbl_tracer_indices%dopr_shadow_ind, &
+         donr_shadow_ind   => marbl_tracer_indices%donr_shadow_ind, &
+         docr_shadow_ind   => marbl_tracer_indices%docr_shadow_ind  &
          )
 
     !-----------------------------------------------------------------------
@@ -4693,6 +4738,25 @@ contains
     dtracers(dopr_ind) = (DOP_prod * DOPprod_refract) - DOPr_remin + (POP_remin * POPremin_refract)
 
     !-----------------------------------------------------------------------
+    ! shadow DOM tendencies uses shadow DOM remin
+    !   they are otherwise identical to the DOM tendencies
+    !-----------------------------------------------------------------------
+
+    if (lNK_shadow_tracers) then
+      dtracers(doc_shadow_ind)  = dtracers(doc_ind)  - (DOC_shadow_remin  - DOC_remin)
+
+      dtracers(docr_shadow_ind) = dtracers(docr_ind) - (DOCr_shadow_remin - DOCr_remin)
+
+      dtracers(don_shadow_ind)  = dtracers(don_ind)  - (DON_shadow_remin  - DON_remin)
+
+      dtracers(donr_shadow_ind) = dtracers(donr_ind) - (DONr_shadow_remin - DONr_remin)
+
+      dtracers(dop_shadow_ind)  = dtracers(dop_ind)  - (DOP_shadow_remin  - DOP_remin)
+
+      dtracers(dopr_shadow_ind) = dtracers(dopr_ind) - (DOPr_shadow_remin - DOPr_remin)
+    end if
+
+    !-----------------------------------------------------------------------
     !  dissolved inorganic Carbon
     !-----------------------------------------------------------------------
 
@@ -4710,8 +4774,14 @@ contains
 
     dtracers(dic_alt_co2_ind) = dtracers(dic_ind) + (P_CaCO3_ALT_CO2_remin - P_CaCO3_remin)
 
+    !-----------------------------------------------------------------------
+    ! shadow DIC tendency uses shadow DOC and DOCr remin
+    !   it is otherwise identical to the DIC tendency
+    !-----------------------------------------------------------------------
+
     if (lNK_shadow_tracers) then
-      dtracers(dic_shadow_ind) = dtracers(dic_ind)
+      dtracers(dic_shadow_ind) = dtracers(dic_ind) + (DOC_shadow_remin - DOC_remin) &
+        + (DOCr_shadow_remin - DOCr_remin)
     end if
 
     !-----------------------------------------------------------------------
@@ -4728,6 +4798,10 @@ contains
     end do
 
     dtracers(alk_alt_co2_ind) = dtracers(alk_ind) + c2 * (P_CaCO3_ALT_CO2_remin - P_CaCO3_remin)
+
+    !-----------------------------------------------------------------------
+    ! shadow ALK tendency is identical to ALK tendency
+    !-----------------------------------------------------------------------
 
     if (lNK_shadow_tracers) then
       dtracers(alk_shadow_ind) = dtracers(alk_ind)

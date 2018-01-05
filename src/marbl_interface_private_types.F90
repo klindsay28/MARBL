@@ -225,8 +225,15 @@ module marbl_interface_private_types
     integer (int_kind) :: donr_ind        = 0 ! refractory DON
     integer (int_kind) :: docr_ind        = 0 ! refractory DOC
 
+    ! Shadow tracers
     integer (int_kind) :: dic_shadow_ind  = 0 ! dissolved inorganic carbon, shadow
     integer (int_kind) :: alk_shadow_ind  = 0 ! alkalinity, shadow
+    integer (int_kind) :: doc_shadow_ind  = 0 ! dissolved organic carbon, shadow
+    integer (int_kind) :: don_shadow_ind  = 0 ! dissolved organic nitrogen, shadow
+    integer (int_kind) :: dop_shadow_ind  = 0 ! dissolved organic phosphorus, shadow
+    integer (int_kind) :: dopr_shadow_ind = 0 ! refractory DOP, shadow
+    integer (int_kind) :: donr_shadow_ind = 0 ! refractory DON, shadow
+    integer (int_kind) :: docr_shadow_ind = 0 ! refractory DOC, shadow
 
     ! CISO tracers
     integer (int_kind) :: di13c_ind       = 0 ! dissolved inorganic carbon 13
@@ -601,11 +608,6 @@ contains
     call this%add_tracer_index('donr', 'ecosys_base', this%donr_ind, marbl_status_log)
     call this%add_tracer_index('docr', 'ecosys_base', this%docr_ind, marbl_status_log)
 
-    if (lNK_shadow_tracers) then
-      call this%add_tracer_index('dic_shadow', 'ecosys_base', this%dic_shadow_ind, marbl_status_log)
-      call this%add_tracer_index('alk_shadow', 'ecosys_base', this%alk_shadow_ind, marbl_status_log)
-    end if
-
     do n=1,zooplankton_cnt
       write(ind_name, "(2A)") trim(zooplankton(n)%sname), "C"
       call this%add_tracer_index(ind_name, 'ecosys_base', this%zoo_inds(n)%C_ind, marbl_status_log)
@@ -637,6 +639,17 @@ contains
         call this%add_tracer_index(ind_name, 'ecosys_base', this%auto_inds(n)%CaCO3_ind, marbl_status_log)
       end if
     end do
+
+    if (lNK_shadow_tracers) then
+      call this%add_tracer_index('dic_shadow',  'ecosys_base', this%dic_shadow_ind,  marbl_status_log)
+      call this%add_tracer_index('alk_shadow',  'ecosys_base', this%alk_shadow_ind,  marbl_status_log)
+      call this%add_tracer_index('doc_shadow',  'ecosys_base', this%doc_shadow_ind,  marbl_status_log)
+      call this%add_tracer_index('don_shadow',  'ecosys_base', this%don_shadow_ind,  marbl_status_log)
+      call this%add_tracer_index('dop_shadow',  'ecosys_base', this%dop_shadow_ind,  marbl_status_log)
+      call this%add_tracer_index('dopr_shadow', 'ecosys_base', this%dopr_shadow_ind, marbl_status_log)
+      call this%add_tracer_index('donr_shadow', 'ecosys_base', this%donr_shadow_ind, marbl_status_log)
+      call this%add_tracer_index('docr_shadow', 'ecosys_base', this%docr_shadow_ind, marbl_status_log)
+    end if
 
     if (ciso_on) then
       call this%add_tracer_index('di13c', 'ciso', this%di13c_ind, marbl_status_log)

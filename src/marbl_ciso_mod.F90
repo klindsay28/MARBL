@@ -82,8 +82,7 @@ contains
 
   !*****************************************************************************
 
-  subroutine marbl_ciso_init_tracer_metadata(marbl_tracer_metadata,           &
-                                             marbl_tracer_indices)
+  subroutine marbl_ciso_init_tracer_metadata(marbl_tracer_indices, marbl_tracer_metadata)
 
     !  Set tracer and forcing metadata
 
@@ -91,8 +90,8 @@ contains
 
     implicit none
 
-    type (marbl_tracer_metadata_type) , intent(inout) :: marbl_tracer_metadata(:)   ! descriptors for each tracer
     type(marbl_tracer_index_type)     , intent(in)    :: marbl_tracer_indices
+    type (marbl_tracer_metadata_type) , intent(inout) :: marbl_tracer_metadata(:)   ! descriptors for each tracer
 
     !-----------------------------------------------------------------------
     !  local variables

@@ -214,6 +214,14 @@ module marbl_diagnostics_mod
     integer(int_kind), allocatable :: zoo_graze_zoo(:)
     integer(int_kind), allocatable :: x_graze_zoo(:)
 
+    ! ciso ids for nonstandard 3d fields
+    integer(int_kind) :: DOC_SHADOW_remin
+    integer(int_kind) :: DOCr_SHADOW_remin
+    integer(int_kind) :: DON_SHADOW_remin
+    integer(int_kind) :: DONr_SHADOW_remin
+    integer(int_kind) :: DOP_SHADOW_remin
+    integer(int_kind) :: DOPr_SHADOW_remin
+
      !  ciso ids for nonstandard 3d fields
      integer (int_kind) :: CISO_PO13C_FLUX_IN                                 ! po13c flux into cell
      integer (int_kind) :: CISO_PO14C_FLUX_IN                                 ! po14c flux into cell
@@ -721,7 +729,7 @@ contains
       end if
 
       !-----------------------------------------------------------------------
-      !  2D fields related to NK shadow tracers
+      !  surface diagnostics related to NK shadow tracers
       !-----------------------------------------------------------------------
 
       if (lNK_shadow_tracers) then
@@ -2538,6 +2546,84 @@ contains
 
       end do
 
+      !-----------------------------------------------------------------------
+      !  interior diagnostics related to NK shadow tracers
+      !-----------------------------------------------------------------------
+
+      if (lNK_shadow_tracers) then
+        lname = 'DOC Shadow Remineralization'
+        sname = 'DOC_SHADOW_remin'
+        units = 'mmol/m^3/s'
+        vgrid = 'layer_avg'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+             ind%DOC_SHADOW_remin, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'DOCr Shadow Remineralization'
+        sname = 'DOCr_SHADOW_remin'
+        units = 'mmol/m^3/s'
+        vgrid = 'layer_avg'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+             ind%DOCr_SHADOW_remin, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'DON Shadow Remineralization'
+        sname = 'DON_SHADOW_remin'
+        units = 'mmol/m^3/s'
+        vgrid = 'layer_avg'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+             ind%DON_SHADOW_remin, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'DONr Shadow Remineralization'
+        sname = 'DONr_SHADOW_remin'
+        units = 'mmol/m^3/s'
+        vgrid = 'layer_avg'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+             ind%DONr_SHADOW_remin, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'DOP Shadow Remineralization'
+        sname = 'DOP_SHADOW_remin'
+        units = 'mmol/m^3/s'
+        vgrid = 'layer_avg'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+             ind%DOP_SHADOW_remin, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'DOPr Shadow Remineralization'
+        sname = 'DOPr_SHADOW_remin'
+        units = 'mmol/m^3/s'
+        vgrid = 'layer_avg'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+             ind%DOPr_SHADOW_remin, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+      end if
+
       if (ciso_on) then
 
         !  nonstandard 3D fields
@@ -3229,6 +3315,7 @@ contains
        autotroph_secondary_species,                   &
        zooplankton_secondary_species,                 &
        dissolved_organic_matter,                      &
+       dissolved_organic_matter_shadow,               &
        marbl_particulate_share,                       &
        PAR,                                           &
        PON_remin, PON_sed_loss,                       &
@@ -3256,6 +3343,7 @@ contains
     type (autotroph_secondary_species_type)   , intent(in) :: autotroph_secondary_species(autotroph_cnt, domain%km)
     type (zooplankton_secondary_species_type) , intent(in) :: zooplankton_secondary_species(zooplankton_cnt, domain%km)
     type (dissolved_organic_matter_type)      , intent(in) :: dissolved_organic_matter(domain%km)
+    type (dissolved_organic_matter_type)      , intent(in) :: dissolved_organic_matter_shadow(domain%km)
     type (marbl_particulate_share_type)       , intent(in) :: marbl_particulate_share
     type (marbl_PAR_type)                     , intent(in) :: PAR
     real (r8)                                 , intent(in) :: PON_remin(domain%km)        ! remin of PON
@@ -3336,7 +3424,7 @@ contains
          PAR%col_frac(:), PAR%avg(:,:), marbl_interior_forcing_diags)
 
     call store_diagnostics_dissolved_organic_matter(domain, &
-         dissolved_organic_matter, marbl_interior_forcing_diags)
+         dissolved_organic_matter, dissolved_organic_matter_shadow, marbl_interior_forcing_diags)
 
     call store_diagnostics_iron_cycle(domain, &
          fe_scavenge, fe_scavenge_rate, Lig_prod, Lig_loss, Lig_scavenge, &
@@ -3510,7 +3598,7 @@ contains
        diags(ind_diag%ATM_ALT_CO2)%field_2d(:)          = xco2_alt_co2(:)
 
        if (lNK_shadow_tracers) then
-         diags(ind_diag%DIC_SHADOW_GAS_FLUX)%field_2d(:) = flux_co2_shadow(:)
+         diags(ind_diag%DIC_SHADOW_GAS_FLUX)%field_2d(:)           = flux_co2_shadow(:)
          diags(ind_diag%d_SF_DIC_SHADOW_d_DIC_SHADOW)%field_2d(:) = d_sf_dic_shadow_d_dic_shadow(:)
          diags(ind_diag%d_SF_DIC_SHADOW_d_ALK_SHADOW)%field_2d(:) = d_sf_dic_shadow_d_alk_shadow(:)
        endif
@@ -4014,10 +4102,13 @@ contains
   !***********************************************************************
 
   subroutine store_diagnostics_dissolved_organic_matter(marbl_domain, &
-       dissolved_organic_matter, marbl_diags)
+       dissolved_organic_matter, dissolved_organic_matter_shadow, marbl_diags)
+
+    use marbl_settings_mod, only : lNK_shadow_tracers
 
     type(marbl_domain_type)      , intent(in)    :: marbl_domain
     type(dissolved_organic_matter_type) , intent(in)    :: dissolved_organic_matter(:) ! (km)
+    type(dissolved_organic_matter_type) , intent(in)    :: dissolved_organic_matter_shadow(:) ! (km)
     type(marbl_diagnostics_type)        , intent(inout) :: marbl_diags
 
     !-----------------------------------------------------------------------
@@ -4043,6 +4134,17 @@ contains
        diags(ind%DOP_remin)%field_3d(k, 1)        = dissolved_organic_matter(k)%DOP_remin
        diags(ind%DOPr_remin)%field_3d(k, 1)       = dissolved_organic_matter(k)%DOPr_remin
     end do
+
+    if (lNK_shadow_tracers) then
+      do k = 1, km
+        diags(ind%DOC_SHADOW_remin)%field_3d(k, 1)  = dissolved_organic_matter_shadow(k)%DOC_remin
+        diags(ind%DOCr_SHADOW_remin)%field_3d(k, 1) = dissolved_organic_matter_shadow(k)%DOCr_remin
+        diags(ind%DON_SHADOW_remin)%field_3d(k, 1)  = dissolved_organic_matter_shadow(k)%DON_remin
+        diags(ind%DONr_SHADOW_remin)%field_3d(k, 1) = dissolved_organic_matter_shadow(k)%DONr_remin
+        diags(ind%DOP_SHADOW_remin)%field_3d(k, 1)  = dissolved_organic_matter_shadow(k)%DOP_remin
+        diags(ind%DOPr_SHADOW_remin)%field_3d(k, 1) = dissolved_organic_matter_shadow(k)%DOPr_remin
+      end do
+    end if
 
     end associate
 
