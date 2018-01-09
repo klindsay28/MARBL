@@ -1481,6 +1481,14 @@ contains
     !     which is based on caco3_bury_thres_opt.
     !-----------------------------------------------------------------------
 
+    POC%to_floor(k)             = c0
+    POP%to_floor(k)             = c0
+    P_SiO2%to_floor(k)          = c0
+    P_CaCO3%to_floor(k)         = c0
+    P_CaCO3_ALT_CO2%to_floor(k) = c0
+    P_iron%to_floor(k)          = c0
+    dust%to_floor(k)            = c0
+
     POC%sed_loss(k)             = c0
     POP%sed_loss(k)             = c0
     P_SiO2%sed_loss(k)          = c0
@@ -1566,6 +1574,8 @@ contains
           glo_avg_fields_interior(glo_avg_field_ind_interior_bSi_bury) = P_SiO2%sed_loss(k)
           glo_avg_fields_interior(glo_avg_field_ind_interior_d_bSi_bury_d_bury_coeff) = flux * bury_frac
        endif
+
+       P_CaCO3%to_floor(k) = P_CaCO3%sflux_out(k) + P_CaCO3%hflux_out(k)
 
        if (caco3_bury_thres_iopt == caco3_bury_thres_iopt_fixed_depth) then
           if (zw(k) < caco3_bury_thres_depth) then
@@ -4788,7 +4798,7 @@ contains
     !  alkalinity
     !-----------------------------------------------------------------------
 
-    dtracers(alk_ind) = -dtracers(no3_ind) + dtracers(nh4_ind) + c2 * P_CaCO3_remin
+    dtracers(alk_ind) = interior_restore(alk_ind) - dtracers(no3_ind) + dtracers(nh4_ind) + c2 * P_CaCO3_remin
 
     do auto_ind = 1, auto_cnt
        if (marbl_tracer_indices%auto_inds(auto_ind)%CaCO3_ind > 0) then
@@ -4797,14 +4807,16 @@ contains
        end if
     end do
 
-    dtracers(alk_alt_co2_ind) = dtracers(alk_ind) + c2 * (P_CaCO3_ALT_CO2_remin - P_CaCO3_remin)
+    dtracers(alk_alt_co2_ind) = dtracers(alk_ind) + c2 * (P_CaCO3_ALT_CO2_remin - P_CaCO3_remin) &
+      + (interior_restore(alk_alt_co2_ind) - interior_restore(alk_ind))
 
     !-----------------------------------------------------------------------
-    ! shadow ALK tendency is identical to ALK tendency
+    ! shadow ALK tendency uses its own restoring term
+    !   it is otherwise identical to the ALK tendency
     !-----------------------------------------------------------------------
 
     if (lNK_shadow_tracers) then
-      dtracers(alk_shadow_ind) = dtracers(alk_ind)
+      dtracers(alk_shadow_ind) = dtracers(alk_ind) + (interior_restore(alk_shadow_ind) - interior_restore(alk_ind))
     end if
 
     !-----------------------------------------------------------------------
