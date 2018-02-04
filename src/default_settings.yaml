@@ -142,6 +142,12 @@ general_parms :
       datatype : logical
       default_value : .false.
       _append_to_config_keywords : true
+   parm_NK_nut_restore_tau_years :
+      longname : restoring timescale for NK nutrient tracers
+      subcategory : 4. general parameters
+      units : years
+      datatype : real
+      default_value : 10.0
    parm_Fe_bioavail :
       longname : Fraction of Fe flux that is bioavailable
       subcategory : 4. general parameters

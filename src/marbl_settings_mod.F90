@@ -228,6 +228,7 @@ module marbl_settings_mod
   character(len=char_len), target :: init_bury_coeff_opt
 
   real(r8), target :: &
+       parm_NK_nut_restore_tau_years,& ! restoring timescale (years) for NK nutrient tracers
        parm_Fe_bioavail,           & ! fraction of Fe flux that is bioavailable
        parm_o2_min,                & ! min O2 needed for prod & consump. (nmol/cm^3)
        parm_o2_min_delta,          & ! width of min O2 range (nmol/cm^3)
@@ -345,6 +346,7 @@ contains
     init_bury_coeff_opt           = 'settings_file' ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     ladjust_bury_coeff            = .false.         ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     lNK_shadow_tracers            = .false.         ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
+    parm_NK_nut_restore_tau_years = 10.0_r8         ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_Fe_bioavail              = 1.0_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_o2_min                   = 5.0_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_o2_min_delta             = 5.0_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
@@ -624,6 +626,15 @@ contains
     ! -----------------------------
     category  = 'general parmeters'
     ! -----------------------------
+
+    sname     = 'parm_NK_nut_restore_tau_years'
+    lname     = 'restoring timescale for NK nutrient tracers'
+    units     = 'years'
+    datatype  = 'real'
+    rptr      => parm_NK_nut_restore_tau_years
+    call this%add_var(sname, lname, units, datatype, category,       &
+                        marbl_status_log, rptr=rptr)
+    call check_and_log_add_var_error(marbl_status_log, sname, subname, labort_marbl_loc)
 
     sname     = 'parm_Fe_bioavail'
     lname     = 'Fraction of Fe flux that is bioavailable'

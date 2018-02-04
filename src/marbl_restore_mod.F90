@@ -76,8 +76,9 @@ subroutine marbl_restore_compute_interior_restore_shadow(interior_tracers, km,  
   !
   !  selectively restore shadow tracers to their non-shadow analogue
   !
-  use marbl_constants_mod, only : yps
   use marbl_interface_private_types, only : marbl_tracer_index_type
+  use marbl_settings_mod, only : parm_NK_nut_restore_tau_years
+  use marbl_constants_mod, only : yps
 
   !-----------------------------------------------------------------------
   !  input variables
@@ -109,7 +110,7 @@ subroutine marbl_restore_compute_interior_restore_shadow(interior_tracers, km,  
   non_shadow_ind = marbl_tracer_indices%sio3_ind
 
   k = 1
-  shadow_inv_tau = 10.0_r8 * yps ! 10/yr
+  shadow_inv_tau = parm_NK_nut_restore_tau_years * yps
   interior_restore(shadow_ind,k) = interior_restore(shadow_ind,k) &
     + shadow_inv_tau * (interior_tracers(non_shadow_ind,k) - interior_tracers(shadow_ind,k))
 
