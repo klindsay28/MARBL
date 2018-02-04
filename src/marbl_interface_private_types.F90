@@ -227,6 +227,7 @@ module marbl_interface_private_types
     integer (int_kind) :: docr_ind        = 0 ! refractory DOC
 
     ! Shadow tracers
+    integer (int_kind) :: sio3_shadow_ind = 0 ! dissolved inorganic silicate, shadow
     integer (int_kind) :: dic_shadow_ind  = 0 ! dissolved inorganic carbon, shadow
     integer (int_kind) :: alk_shadow_ind  = 0 ! alkalinity, shadow
     integer (int_kind) :: doc_shadow_ind  = 0 ! dissolved organic carbon, shadow
@@ -644,6 +645,7 @@ contains
     end do
 
     if (lNK_shadow_tracers) then
+      call this%add_tracer_index('sio3_shadow', 'ecosys_base', this%sio3_shadow_ind, marbl_status_log)
       call this%add_tracer_index('dic_shadow',  'ecosys_base', this%dic_shadow_ind,  marbl_status_log)
       call this%add_tracer_index('alk_shadow',  'ecosys_base', this%alk_shadow_ind,  marbl_status_log)
       call this%add_tracer_index('doc_shadow',  'ecosys_base', this%doc_shadow_ind,  marbl_status_log)

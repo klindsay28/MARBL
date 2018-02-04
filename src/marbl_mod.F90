@@ -463,11 +463,13 @@ contains
 
     !  Compute time derivatives for ecosystem state variables
 
+    use marbl_settings_mod, only : lNK_shadow_tracers
     use marbl_ciso_mod, only : marbl_ciso_set_interior_forcing
     use marbl_interface_private_types, only : marbl_internal_timers_type
     use marbl_interface_private_types, only : marbl_timer_indexing_type
     use marbl_interface_private_types, only : marbl_interior_saved_state_indexing_type
     use marbl_restore_mod, only : marbl_restore_compute_interior_restore
+    use marbl_restore_mod, only : marbl_restore_compute_interior_restore_shadow
     use marbl_diagnostics_mod, only : marbl_interior_diag_ind
 
     type    (marbl_domain_type)                 , intent(in)    :: domain
@@ -592,6 +594,14 @@ contains
                interior_forcings,                           &
                interior_forcing_indices,                    &
                interior_restore)
+
+    if (lNK_shadow_tracers) then
+      call marbl_restore_compute_interior_restore_shadow(     &
+                 tracers,                                     &
+                 km,                                          &
+                 marbl_tracer_indices,                        &
+                 interior_restore)
+    end if
 
     !-----------------------------------------------------------------------
     !  create local copies of model tracers
@@ -1903,6 +1913,7 @@ contains
          alk_ind           => marbl_tracer_indices%alk_ind,                                     &
          alk_alt_co2_ind   => marbl_tracer_indices%alk_alt_co2_ind,                             &
 
+         sio3_shadow_ind   => marbl_tracer_indices%sio3_shadow_ind,                             &
          dic_shadow_ind    => marbl_tracer_indices%dic_shadow_ind,                              &
          alk_shadow_ind    => marbl_tracer_indices%alk_shadow_ind,                              &
 
@@ -2344,6 +2355,10 @@ contains
     stf(:, po4_ind) = stf(:, po4_ind)   + (dust_flux_in * (0.00105_r8 *  0.15_r8 / 30.974_r8 * 1.0e9_r8))
 
     stf(:, sio3_ind) = stf(:, sio3_ind) + (dust_flux_in * (  0.308_r8 * 0.075_r8 / 28.085_r8 * 1.0e9_r8))
+
+    if (lNK_shadow_tracers) then
+      stf(:, sio3_shadow_ind) = stf(:, sio3_shadow_ind) + (dust_flux_in * (  0.308_r8 * 0.075_r8 / 28.085_r8 * 1.0e9_r8))
+    end if
 
     !-----------------------------------------------------------------------
     !  calculate nox and nhy fluxes if necessary
@@ -4615,6 +4630,7 @@ contains
          donr_ind          => marbl_tracer_indices%donr_ind,        &
          docr_ind          => marbl_tracer_indices%docr_ind,        &
 
+         sio3_shadow_ind   => marbl_tracer_indices%sio3_shadow_ind, &
          dic_shadow_ind    => marbl_tracer_indices%dic_shadow_ind,  &
          alk_shadow_ind    => marbl_tracer_indices%alk_shadow_ind,  &
          doc_shadow_ind    => marbl_tracer_indices%doc_shadow_ind,  &
@@ -4675,6 +4691,15 @@ contains
                + (c1 - autotrophs(auto_ind)%loss_poc) * auto_loss(auto_ind))
        endif
     end do
+
+    !-----------------------------------------------------------------------
+    ! shadow SiO3 tendency uses its own restoring term
+    !   it is otherwise identical to the SiO3 tendency
+    !-----------------------------------------------------------------------
+
+    if (lNK_shadow_tracers) then
+      dtracers(sio3_shadow_ind) = dtracers(sio3_ind) + (interior_restore(sio3_shadow_ind) - interior_restore(sio3_ind))
+    end if
 
     !-----------------------------------------------------------------------
     !  phosphate

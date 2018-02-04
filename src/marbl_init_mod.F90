@@ -572,6 +572,8 @@ contains
                marbl_tracer_metadata(marbl_tracer_indices%alk_alt_co2_ind), base_units='meq/m^3')
 
     if (lNK_shadow_tracers) then
+      call marbl_init_non_autotroph_tracer_metadata('SiO3_SHADOW', 'Dissolved Inorganic Silicate, Shadow', &
+                 marbl_tracer_metadata(marbl_tracer_indices%sio3_shadow_ind))
       call marbl_init_non_autotroph_tracer_metadata('DIC_SHADOW', 'Dissolved Inorganic Carbon, Shadow', &
                  marbl_tracer_metadata(marbl_tracer_indices%dic_shadow_ind))
       call marbl_init_non_autotroph_tracer_metadata('ALK_SHADOW', 'Alkalinity, Shadow', &
