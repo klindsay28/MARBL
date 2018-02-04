@@ -768,12 +768,12 @@
          "subcategory": "4. general parameters (scavenging)",
          "units": "unitless"
       },
-      "parm_NK_nut_restore_tau_years": {
+      "parm_NK_nut_restore_invtau_peryear": {
          "datatype": "real",
          "default_value": 10.0,
-         "longname": "restoring timescale for NK nutrient tracers",
+         "longname": "restoring inverse timescale for NK nutrient tracers",
          "subcategory": "4. general parameters",
-         "units": "years"
+         "units": "1/year"
       },
       "parm_POC_diss": {
          "datatype": "real",
