@@ -1913,6 +1913,7 @@ contains
          alk_ind           => marbl_tracer_indices%alk_ind,                                     &
          alk_alt_co2_ind   => marbl_tracer_indices%alk_alt_co2_ind,                             &
 
+         po4_shadow_ind    => marbl_tracer_indices%po4_shadow_ind,                              &
          sio3_shadow_ind   => marbl_tracer_indices%sio3_shadow_ind,                             &
          dic_shadow_ind    => marbl_tracer_indices%dic_shadow_ind,                              &
          alk_shadow_ind    => marbl_tracer_indices%alk_shadow_ind,                              &
@@ -2352,11 +2353,11 @@ contains
     !  (Si frac in dust by weight) * (Si solubility) / (Si molecular weight) * (mol->nmol)
     !-----------------------------------------------------------------------
 
-    stf(:, po4_ind) = stf(:, po4_ind)   + (dust_flux_in * (0.00105_r8 *  0.15_r8 / 30.974_r8 * 1.0e9_r8))
-
+    stf(:, po4_ind)  = stf(:, po4_ind)  + (dust_flux_in * (0.00105_r8 *  0.15_r8 / 30.974_r8 * 1.0e9_r8))
     stf(:, sio3_ind) = stf(:, sio3_ind) + (dust_flux_in * (  0.308_r8 * 0.075_r8 / 28.085_r8 * 1.0e9_r8))
 
     if (lNK_shadow_tracers) then
+      stf(:, po4_shadow_ind)  = stf(:, po4_shadow_ind)  + (dust_flux_in * (0.00105_r8 *  0.15_r8 / 30.974_r8 * 1.0e9_r8))
       stf(:, sio3_shadow_ind) = stf(:, sio3_shadow_ind) + (dust_flux_in * (  0.308_r8 * 0.075_r8 / 28.085_r8 * 1.0e9_r8))
     end if
 
@@ -4630,6 +4631,7 @@ contains
          donr_ind          => marbl_tracer_indices%donr_ind,        &
          docr_ind          => marbl_tracer_indices%docr_ind,        &
 
+         po4_shadow_ind    => marbl_tracer_indices%po4_shadow_ind,  &
          sio3_shadow_ind   => marbl_tracer_indices%sio3_shadow_ind, &
          dic_shadow_ind    => marbl_tracer_indices%dic_shadow_ind,  &
          alk_shadow_ind    => marbl_tracer_indices%alk_shadow_ind,  &
@@ -4708,6 +4710,16 @@ contains
     dtracers(po4_ind) = interior_restore(po4_ind) + DOP_remin + DOPr_remin - sum(PO4_V(:)) &
          + (c1 - POPremin_refract) * POP_remin + sum(remaining_P_dip(:)) &
          + Qp_zoo * ( sum(zoo_loss_dic(:)) + sum(zoo_graze_dic(:)) )
+
+    !-----------------------------------------------------------------------
+    ! shadow PO4 tendency uses its own restoring term and shadow DOP and DOPr remin
+    !   it is otherwise identical to the PO4 tendency
+    !-----------------------------------------------------------------------
+
+    if (lNK_shadow_tracers) then
+      dtracers(po4_shadow_ind) = dtracers(po4_ind) + (interior_restore(po4_shadow_ind) - interior_restore(po4_ind)) &
+        + (DOP_shadow_remin - DOP_remin) + (DOPr_shadow_remin - DOPr_remin)
+    end if
 
     !-----------------------------------------------------------------------
     !  zoo Carbon

@@ -103,6 +103,18 @@ subroutine marbl_restore_compute_interior_restore_shadow(interior_tracers, km,  
   real(kind=r8)     :: shadow_inv_tau
 
   !-----------------------------------------------------------------------
+  ! PO4, surface layer only
+  !-----------------------------------------------------------------------
+
+  shadow_ind     = marbl_tracer_indices%po4_shadow_ind
+  non_shadow_ind = marbl_tracer_indices%po4_ind
+
+  k = 1
+  shadow_inv_tau = parm_NK_nut_restore_invtau_peryear * yps
+  interior_restore(shadow_ind,k) = interior_restore(shadow_ind,k) &
+    + shadow_inv_tau * (interior_tracers(non_shadow_ind,k) - interior_tracers(shadow_ind,k))
+
+  !-----------------------------------------------------------------------
   ! SiO3, surface layer only
   !-----------------------------------------------------------------------
 

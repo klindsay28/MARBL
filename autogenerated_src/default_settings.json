@@ -570,7 +570,7 @@
       "default": 32,
       "increments": {
          "ciso_on = .true.": 14,
-         "lNK_shadow_tracers = .true.": 9,
+         "lNK_shadow_tracers = .true.": 10,
          "lvariable_PtoC = .false.": -3
       }
    },
@@ -928,7 +928,7 @@
             "default": 32,
             "increments": {
                "ciso_on = .true.": 14,
-               "lNK_shadow_tracers = .true.": 9,
+               "lNK_shadow_tracers = .true.": 10,
                "lvariable_PtoC = .false.": -3
             }
          },
