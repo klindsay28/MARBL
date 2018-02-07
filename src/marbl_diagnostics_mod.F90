@@ -278,6 +278,9 @@ module marbl_diagnostics_mod
      integer (int_kind) :: pocToSed_13C                                       ! poc burial flux to sediments
      integer (int_kind) :: pocToSed_14C                                       ! poc burial flux to sediments
 
+     integer (int_kind) :: CISO_DO13C_SHADOW_remin                            ! DO13C_SHADOW remineralization
+     integer (int_kind) :: CISO_DO14C_SHADOW_remin                            ! DO14C_SHADOW remineralization
+
      ! restoring 3D diags
      integer(int_kind), dimension(:), allocatable :: restore_tend
    contains
@@ -338,6 +341,8 @@ module marbl_diagnostics_mod
      integer(int_kind) :: CISO_D14C_atm             ! atmospheric delta14C in permil
      integer(int_kind) :: CISO_eps_aq_g_surf        ! tavg id for eps_aq_g_surf
      integer(int_kind) :: CISO_eps_dic_g_surf       ! tavg id for eps_dic_g_surf
+     integer(int_kind) :: d_SF_DI13C_SHADOW_d_DI13C_SHADOW ! tavg id for d_SF_DI13C_SHADOW_d_DI13C_SHADOW
+     integer(int_kind) :: d_SF_DI14C_SHADOW_d_DI14C_SHADOW ! tavg id for d_SF_DI14C_SHADOW_d_DI14C_SHADOW
   end type marbl_surface_forcing_diagnostics_indexing_type
   type(marbl_surface_forcing_diagnostics_indexing_type), public :: marbl_surface_forcing_diag_ind
 
@@ -964,6 +969,30 @@ contains
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
              ind%CISO_R14C_atm, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname    = 'deriv of flux of 13CO2_SHADOW wrt DI14C_SHADOW'
+        sname    = 'd_SF_DI13C_SHADOW_d_DI13C_SHADOW'
+        units    = 'cm/s'
+        vgrid    = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%d_SF_DI13C_SHADOW_d_DI13C_SHADOW, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname    = 'deriv of flux of 14CO2_SHADOW wrt DI14C_SHADOW'
+        sname    = 'd_SF_DI14C_SHADOW_d_DI14C_SHADOW'
+        units    = 'cm/s'
+        vgrid    = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%d_SF_DI14C_SHADOW_d_DI14C_SHADOW, marbl_status_log)
         if (marbl_status_log%labort_marbl) then
           call log_add_diagnostics_error(marbl_status_log, sname, subname)
           return
@@ -2928,6 +2957,30 @@ contains
           return
         end if
 
+        lname    = 'DO13C_SHADOW Remineralization'
+        sname    = 'CISO_DO13C_SHADOW_remin'
+        units    = 'mmol/m^3/s'
+        vgrid    = 'layer_avg'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%CISO_DO13C_SHADOW_remin, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname    = 'DO14C_SHADOW Remineralization'
+        sname    = 'CISO_DO14C_SHADOW_remin'
+        units    = 'mmol/m^3/s'
+        vgrid    = 'layer_avg'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%CISO_DO14C_SHADOW_remin, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
         !  Nonstandard 2D fields
 
         lname    = 'Total 13C Fixation Vertical Integral'
@@ -3668,7 +3721,7 @@ contains
 
     integer(int_kind) :: k
     !-----------------------------------------------------------------------
-    
+
     associate(                                               &
          km                => marbl_domain%km,               &
          diags             => marbl_interior_diags%diags,    &
@@ -4572,14 +4625,18 @@ contains
        PO14C,               &
        P_Ca13CO3,           &
        P_Ca14CO3,           &
+       DO13C_SHADOW_remin,  &
+       DO14C_SHADOW_remin,  &
        dtracers,            &
        marbl_tracer_indices,&
        marbl_diags)
 
     !---------------------------------------------------------------------
     ! !DESCRIPTION:
-    !  Update marbl_interior_ciso_diags data type 
+    !  Update marbl_interior_ciso_diags data type
     !---------------------------------------------------------------------
+
+    use marbl_settings_mod, only : lNK_ciso_shadow_tracers
 
     implicit none
 
@@ -4610,6 +4667,10 @@ contains
          DO14C_remin , & ! remineralization of 13C DOC (mmol C/m^3/sec)
          eps_aq_g    , & ! equilibrium fractionation (CO2_gaseous <-> CO2_aq)
          eps_dic_g       ! equilibrium fractionation between total DIC and gaseous CO2
+
+    real (r8), intent(in),  dimension(marbl_domain%km) :: &
+         DO13C_SHADOW_remin,& ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
+         DO14C_SHADOW_remin   ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
 
     real (r8), intent(in) :: dtracers(:,:) ! (tracer_cnt, km) computed source/sink terms
 
@@ -4693,13 +4754,13 @@ contains
     do n = 1,autotroph_cnt
        call compute_vertical_integrals(photo13C(n,:), delta_z, kmt,           &
             full_depth_integral=diags(ind%CISO_photo13C_zint(n))%field_2d(1))
-       
+
        call compute_vertical_integrals(photo14C(n,:), delta_z, kmt,           &
             full_depth_integral=diags(ind%CISO_photo14C_zint(n))%field_2d(1))
-       
+
        call compute_vertical_integrals(Ca13CO3_prod(n,:), delta_z, kmt,       &
             full_depth_integral=diags(ind%CISO_Ca13CO3_form_zint(n))%field_2d(1))
-       
+
        call compute_vertical_integrals(Ca14CO3_prod(n,:), delta_z, kmt,       &
             full_depth_integral=diags(ind%CISO_Ca14CO3_form_zint(n))%field_2d(1))
     end do
@@ -4725,7 +4786,7 @@ contains
           end if
        end do  ! end loop over autotrophs
     end do  ! end loop over k
-    
+
     do k = 1,km
        diags(ind%CISO_DIC_d13C)%field_3d(k, 1)        = DIC_d13C(k)
        diags(ind%CISO_DIC_d14C)%field_3d(k, 1)        = DIC_d14C(k)
@@ -4733,17 +4794,17 @@ contains
        diags(ind%CISO_DOC_d13C)%field_3d(k, 1)        = DOC_d13C(k)
        diags(ind%CISO_DOC_d14C)%field_3d(k, 1)        = DOC_d14C(k)
 
-       diags(ind%CISO_DO13C_prod)%field_3d(k, 1)      = DO13C_prod(k)   
-       diags(ind%CISO_DO14C_prod)%field_3d(k, 1)      = DO14C_prod(k)      
+       diags(ind%CISO_DO13C_prod)%field_3d(k, 1)      = DO13C_prod(k)
+       diags(ind%CISO_DO14C_prod)%field_3d(k, 1)      = DO14C_prod(k)
 
-       diags(ind%CISO_DO13C_remin)%field_3d(k, 1)     = DO13C_remin(k)     
-       diags(ind%CISO_DO14C_remin)%field_3d(k, 1)     = DO14C_remin(k)     
+       diags(ind%CISO_DO13C_remin)%field_3d(k, 1)     = DO13C_remin(k)
+       diags(ind%CISO_DO14C_remin)%field_3d(k, 1)     = DO14C_remin(k)
 
        diags(ind%CISO_zooC_d13C)%field_3d(k, 1)       = zooC_d13C(k)
        diags(ind%CISO_zooC_d14C)%field_3d(k, 1)       = zooC_d14C(k)
 
-       diags(ind%CISO_eps_aq_g)%field_3d(k, 1)        = eps_aq_g(k)        
-       diags(ind%CISO_eps_dic_g)%field_3d(k, 1)       = eps_dic_g(k)       
+       diags(ind%CISO_eps_aq_g)%field_3d(k, 1)        = eps_aq_g(k)
+       diags(ind%CISO_eps_dic_g)%field_3d(k, 1)       = eps_dic_g(k)
 
        diags(ind%CISO_Ca13CO3_flux_in)%field_3d(k, 1) = P_Ca13CO3%sflux_in(k) + P_Ca13CO3%hflux_in(k)
        diags(ind%CISO_Ca14CO3_flux_in)%field_3d(k, 1) = P_Ca14CO3%sflux_in(k) + P_Ca14CO3%hflux_in(k)
@@ -4762,6 +4823,11 @@ contains
 
        diags(ind%CISO_PO13C_remin)%field_3d(k, 1)     = PO13C%remin(k)
        diags(ind%CISO_PO14C_remin)%field_3d(k, 1)     = PO14C%remin(k)
+
+       if (lNK_ciso_shadow_tracers) then
+          diags(ind%CISO_DO13C_SHADOW_remin)%field_3d(k, 1) = DO13C_SHADOW_remin(k)
+          diags(ind%CISO_DO14C_SHADOW_remin)%field_3d(k, 1) = DO14C_SHADOW_remin(k)
+       end if
     end do
 
     end associate
@@ -4789,12 +4855,15 @@ contains
        R14C_atm,       &
        eps_aq_g_surf,  &
        eps_dic_g_surf, &
+       d_SF_DI13C_SHADOW_d_DI13C_SHADOW,&
+       d_SF_DI14C_SHADOW_d_DI14C_SHADOW,&
        marbl_surface_forcing_diags)
 
     ! !DESCRIPTION:
     !  Compute surface fluxes for ecosys tracer module.
 
     use marbl_constants_mod, only : R13c_std, R14c_std, c1000
+    use marbl_settings_mod,  only : lNK_ciso_shadow_tracers
 
     implicit none
 
@@ -4816,6 +4885,9 @@ contains
     real (r8), dimension(num_elements) , intent(in)    :: R14C_atm       ! 14C/12C ratio in atmospheric CO2
     real (r8), dimension(num_elements) , intent(in)    :: eps_aq_g_surf  ! equilibrium fractionation (CO2_gaseous <-> CO2_aq)
     real (r8), dimension(num_elements) , intent(in)    :: eps_dic_g_surf ! equilibrium fractionation between total DIC and gaseous CO2
+
+    real (r8), dimension(num_elements) , intent(in)    :: d_SF_DI13C_SHADOW_d_DI13C_SHADOW ! deriv of gas flux of 13CO2_SHADOW wrt DI13C_SHADOW (cm/s)
+    real (r8), dimension(num_elements) , intent(in)    :: d_SF_DI14C_SHADOW_d_DI14C_SHADOW ! deriv of gas flux of 14CO2_SHADOW wrt DI14C_SHADOW (cm/s)
     type(marbl_diagnostics_type)       , intent(inout) :: marbl_surface_forcing_diags
 
     !-----------------------------------------------------------------------
@@ -4857,10 +4929,15 @@ contains
     diags(ind%ciso_r14c_atm)%field_2d(:) = R14C_atm(:)
 
     diags(ind%ciso_d13c_atm)%field_2d(:) = d13c(:)
-    diags(ind%ciso_d14c_atm)%field_2d(:) = d14c(:)        
+    diags(ind%ciso_d14c_atm)%field_2d(:) = d14c(:)
 
     diags(ind%CISO_eps_aq_g_surf)%field_2d(:)  = eps_aq_g_surf(:)
     diags(ind%CISO_eps_dic_g_surf)%field_2d(:) = eps_dic_g_surf(:)
+
+    if (lNK_ciso_shadow_tracers) then
+       diags(ind%d_SF_DI13C_SHADOW_d_DI13C_SHADOW)%field_2d(:) = d_SF_DI13C_SHADOW_d_DI13C_SHADOW(:)
+       diags(ind%d_SF_DI14C_SHADOW_d_DI14C_SHADOW)%field_2d(:) = d_SF_DI14C_SHADOW_d_DI14C_SHADOW(:)
+    end if
 
     end associate
 

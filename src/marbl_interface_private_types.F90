@@ -244,6 +244,12 @@ module marbl_interface_private_types
     integer (int_kind) :: di14c_ind       = 0 ! dissolved inorganic carbon 14
     integer (int_kind) :: do14c_ind       = 0 ! dissolved organic carbon 14
 
+    ! CISO Shadow tracers
+    integer (int_kind) :: di13c_shadow_ind= 0 ! dissolved inorganic carbon 13, shadow
+    integer (int_kind) :: do13c_shadow_ind= 0 ! dissolved organic carbon 13, shadow
+    integer (int_kind) :: di14c_shadow_ind= 0 ! dissolved inorganic carbon 14, shadow
+    integer (int_kind) :: do14c_shadow_ind= 0 ! dissolved organic carbon 14, shadow
+
     ! Living tracers
     type(marbl_living_tracer_index_type), allocatable :: auto_inds(:)
     type(marbl_living_tracer_index_type), allocatable :: zoo_inds(:)
@@ -573,6 +579,7 @@ contains
     use marbl_settings_mod, only : ciso_on
     use marbl_settings_mod, only : lvariable_PtoC
     use marbl_settings_mod, only : lNK_shadow_tracers
+    use marbl_settings_mod, only : lNK_ciso_shadow_tracers
 
     class(marbl_tracer_index_type), intent(out)   :: this
     type(autotroph_type),           intent(in)    :: autotrophs(:)
@@ -665,6 +672,13 @@ contains
       call this%add_tracer_index('do14c', 'ciso', this%do14c_ind, marbl_status_log)
       call this%add_tracer_index('zoo13c', 'ciso', this%zoo13C_ind, marbl_status_log)
       call this%add_tracer_index('zoo14c', 'ciso', this%zoo14C_ind, marbl_status_log)
+
+      if (lNK_ciso_shadow_tracers) then
+        call this%add_tracer_index('di13c_shadow', 'ciso', this%di13c_shadow_ind, marbl_status_log)
+        call this%add_tracer_index('do13c_shadow', 'ciso', this%do13c_shadow_ind, marbl_status_log)
+        call this%add_tracer_index('di14c_shadow', 'ciso', this%di14c_shadow_ind, marbl_status_log)
+        call this%add_tracer_index('do14c_shadow', 'ciso', this%do14c_shadow_ind, marbl_status_log)
+      end if
 
       do n=1,autotroph_cnt
         write(ind_name, "(2A)") trim(autotrophs(n)%sname), "C13"
