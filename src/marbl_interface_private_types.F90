@@ -302,6 +302,10 @@ module marbl_interface_private_types
      integer(int_kind) :: pressure_id    = 0
      integer(int_kind) :: fesedflux_id   = 0
 
+     ! Column fields for NK shadow tracers
+     integer(int_kind) :: normalized_POP_remin_id = 0
+     integer(int_kind) :: normalized_bSi_remin_id = 0
+
      ! Tracer restoring
      ! * tracer_restore_id is the index in interior forcings that contains the
      !   restoring data
@@ -935,6 +939,8 @@ contains
     ! This subroutine sets the interior forcing indexes, which are used to
     ! determine what forcing fields are required from the driver.
 
+    use marbl_settings_mod, only : lNK_shadow_tracers
+
     class(marbl_interior_forcing_indexing_type), intent(out)   :: this
     character(len=char_len), dimension(:),       intent(in)    :: tracer_names
     character(len=char_len), dimension(:),       intent(in)    :: tracer_restore_vars
@@ -1043,6 +1049,17 @@ contains
 
       if (tracer_restore_cnt .gt. 0) call marbl_status_log%log_noerror('', subname)
 
+      ! fields for NK shadow tracers
+      if (lNK_shadow_tracers) then
+        ! normalized POP remin profile
+        forcing_cnt = forcing_cnt + 1
+        this%normalized_POP_remin_id = forcing_cnt
+
+        ! normalized bSi remin profile
+        forcing_cnt = forcing_cnt + 1
+        this%normalized_bSi_remin_id = forcing_cnt
+      end if
+
     end associate
 
   end subroutine interior_forcing_index_constructor
@@ -1050,4 +1067,3 @@ contains
   !*****************************************************************************
 
 end module marbl_interface_private_types
-

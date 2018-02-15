@@ -977,6 +977,24 @@ contains
                                               dim1 = num_levels)
         end if
 
+        ! normalized POP remin profile
+        if (id .eq. ind%normalized_POP_remin_id) then
+          found = .true.
+          interior_forcings(id)%metadata%varname     = 'Normalized POP remin profile'
+          interior_forcings(id)%metadata%field_units = '1'
+          call interior_forcings(id)%set_rank(num_elements, 1, marbl_status_log, &
+                                              dim1 = num_levels)
+        end if
+
+        ! normalized bSi remin profile
+        if (id .eq. ind%normalized_bSi_remin_id) then
+          found = .true.
+          interior_forcings(id)%metadata%varname     = 'Normalized bSi remin profile'
+          interior_forcings(id)%metadata%field_units = '1'
+          call interior_forcings(id)%set_rank(num_elements, 1, marbl_status_log, &
+                                              dim1 = num_levels)
+        end if
+
         ! Interior Tracer Restoring
         do n=1,size(ind%tracer_restore_id)
           if (id .eq. ind%tracer_restore_id(n)) then

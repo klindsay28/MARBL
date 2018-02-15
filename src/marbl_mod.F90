@@ -590,7 +590,7 @@ contains
 
     call marbl_restore_compute_interior_restore(            &
                tracers,                                     &
-               km,                                          &
+               kmt,                                         &
                interior_forcings,                           &
                interior_forcing_indices,                    &
                interior_restore)
@@ -598,7 +598,9 @@ contains
     if (lNK_shadow_tracers) then
       call marbl_restore_compute_interior_restore_shadow(     &
                  tracers,                                     &
-                 km,                                          &
+                 kmt,                                         &
+                 interior_forcings,                           &
+                 interior_forcing_indices,                    &
                  marbl_tracer_indices,                        &
                  interior_restore)
     end if
