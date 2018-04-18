@@ -340,8 +340,8 @@ module marbl_diagnostics_mod
      integer (int_kind) :: pocToSed_13C                                       ! poc burial flux to sediments
      integer (int_kind) :: pocToSed_14C                                       ! poc burial flux to sediments
 
-     integer (int_kind) :: CISO_DO13C_SHADOW_remin                            ! DO13C_SHADOW remineralization
-     integer (int_kind) :: CISO_DO14C_SHADOW_remin                            ! DO14C_SHADOW remineralization
+     integer (int_kind) :: CISO_DO13Ctot_SHADOW_remin                         ! DO13Ctot_SHADOW remineralization
+     integer (int_kind) :: CISO_DO14Ctot_SHADOW_remin                         ! DO14Ctot_SHADOW remineralization
 
      ! restoring 3D diags
      integer(int_kind), dimension(:), allocatable :: restore_tend
@@ -3796,25 +3796,25 @@ contains
           return
         end if
 
-        lname    = 'DO13C_SHADOW Remineralization'
-        sname    = 'CISO_DO13C_SHADOW_remin'
+        lname    = 'DO13Ctot_SHADOW Remineralization'
+        sname    = 'CISO_DO13Ctot_SHADOW_remin'
         units    = 'mmol/m^3/s'
         vgrid    = 'layer_avg'
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%CISO_DO13C_SHADOW_remin, marbl_status_log)
+             ind%CISO_DO13Ctot_SHADOW_remin, marbl_status_log)
         if (marbl_status_log%labort_marbl) then
           call log_add_diagnostics_error(marbl_status_log, sname, subname)
           return
         end if
 
-        lname    = 'DO14C_SHADOW Remineralization'
-        sname    = 'CISO_DO14C_SHADOW_remin'
+        lname    = 'DO14Ctot_SHADOW Remineralization'
+        sname    = 'CISO_DO14Ctot_SHADOW_remin'
         units    = 'mmol/m^3/s'
         vgrid    = 'layer_avg'
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%CISO_DO14C_SHADOW_remin, marbl_status_log)
+             ind%CISO_DO14Ctot_SHADOW_remin, marbl_status_log)
         if (marbl_status_log%labort_marbl) then
           call log_add_diagnostics_error(marbl_status_log, sname, subname)
           return
@@ -5615,8 +5615,8 @@ contains
        eps_aq_g,            &
        eps_dic_g,           &
        decay_14Ctot,        &
-       DO13C_SHADOW_remin,  &
-       DO14C_SHADOW_remin,  &
+       DO13Ctot_SHADOW_remin, &
+       DO14Ctot_SHADOW_remin, &
        PO13C,               &
        PO14C,               &
        P_Ca13CO3,           &
@@ -5665,8 +5665,8 @@ contains
          decay_14Ctot       ! 14C decay loss term
 
     real (r8), dimension(marbl_domain%km) :: &
-         DO13C_SHADOW_remin,& ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
-         DO14C_SHADOW_remin   ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
+         DO13Ctot_SHADOW_remin,& ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
+         DO14Ctot_SHADOW_remin   ! remineralization of 14C DOC_SHADOW (mmol C/m^3/sec)
 
     type(column_sinking_particle_type), intent(in) :: &
          PO13C,        &  ! base units = nmol 13C
@@ -5844,8 +5844,8 @@ contains
        diags(ind%CISO_PO14C_remin)%field_3d(k, 1)     = PO14C%remin(k)
 
        if (lNK_ciso_shadow_tracers) then
-          diags(ind%CISO_DO13C_SHADOW_remin)%field_3d(k, 1) = DO13C_SHADOW_remin(k)
-          diags(ind%CISO_DO14C_SHADOW_remin)%field_3d(k, 1) = DO14C_SHADOW_remin(k)
+          diags(ind%CISO_DO13Ctot_SHADOW_remin)%field_3d(k, 1) = DO13Ctot_SHADOW_remin(k)
+          diags(ind%CISO_DO14Ctot_SHADOW_remin)%field_3d(k, 1) = DO14Ctot_SHADOW_remin(k)
        end if
     end do
 

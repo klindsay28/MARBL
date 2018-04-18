@@ -692,13 +692,6 @@
          "long_name": "Dissolved Inorganic Carbon, Shadow",
          "units": "mmol/m^3"
       },
-      "DO13C_SHADOW": {
-         "dependencies": {
-            "lNK_ciso_shadow_tracers": ".true."
-         },
-         "long_name": "Dissolved Organic Carbon-13, Shadow",
-         "units": "mmol/m^3"
-      },
       "DO13Ctot": {
          "dependencies": {
             "ciso_on": ".true."
@@ -706,11 +699,11 @@
          "long_name": "Dissolved Organic Carbon-13 (semi-labile+refractoy)",
          "units": "mmol/m^3"
       },
-      "DO14C_SHADOW": {
+      "DO13Ctot_SHADOW": {
          "dependencies": {
             "lNK_ciso_shadow_tracers": ".true."
          },
-         "long_name": "Dissolved Organic Carbon-14, Shadow",
+         "long_name": "Dissolved Organic Carbon-13 (semi-labile+refractoy), Shadow",
          "units": "mmol/m^3"
       },
       "DO14Ctot": {
@@ -718,6 +711,13 @@
             "ciso_on": ".true."
          },
          "long_name": "Dissolved Organic Carbon-14 (semi-labile+refractoy)",
+         "units": "mmol/m^3"
+      },
+      "DO14Ctot_SHADOW": {
+         "dependencies": {
+            "lNK_ciso_shadow_tracers": ".true."
+         },
+         "long_name": "Dissolved Organic Carbon-14 (semi-labile+refractoy), Shadow",
          "units": "mmol/m^3"
       },
       "DOC": {

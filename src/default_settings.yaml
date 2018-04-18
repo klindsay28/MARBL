@@ -180,20 +180,20 @@ _tracer_list :
          lNK_ciso_shadow_tracers : .true.
       long_name : Dissolved Inorganic Carbon-13, Shadow
       units : mmol/m^3
-   DO13C_SHADOW :
+   DO13Ctot_SHADOW :
       dependencies :
          lNK_ciso_shadow_tracers : .true.
-      long_name : Dissolved Organic Carbon-13, Shadow
+      long_name : Dissolved Organic Carbon-13 (semi-labile+refractoy), Shadow
       units : mmol/m^3
    DI14C_SHADOW :
       dependencies :
          lNK_ciso_shadow_tracers : .true.
       long_name : Dissolved Inorganic Carbon-14, Shadow
       units : mmol/m^3
-   DO14C_SHADOW :
+   DO14Ctot_SHADOW :
       dependencies :
          lNK_ciso_shadow_tracers : .true.
-      long_name : Dissolved Organic Carbon-14, Shadow
+      long_name : Dissolved Organic Carbon-14 (semi-labile+refractoy), Shadow
       units : mmol/m^3
 
    # Per-autotroph tracers

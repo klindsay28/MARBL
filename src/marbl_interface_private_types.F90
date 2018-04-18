@@ -242,10 +242,10 @@ module marbl_interface_private_types
     integer (int_kind) :: do14ctot_ind    = 0 ! dissolved organic carbon 14 (semi-labile+refractory)
 
     ! CISO Shadow tracers
-    integer (int_kind) :: di13c_shadow_ind= 0 ! dissolved inorganic carbon 13, shadow
-    integer (int_kind) :: do13c_shadow_ind= 0 ! dissolved organic carbon 13, shadow
-    integer (int_kind) :: di14c_shadow_ind= 0 ! dissolved inorganic carbon 14, shadow
-    integer (int_kind) :: do14c_shadow_ind= 0 ! dissolved organic carbon 14, shadow
+    integer (int_kind) :: di13c_shadow_ind    = 0 ! dissolved inorganic carbon 13, shadow
+    integer (int_kind) :: do13ctot_shadow_ind = 0 ! dissolved organic carbon 13 (semi-labile+refractory), shadow
+    integer (int_kind) :: di14c_shadow_ind    = 0 ! dissolved inorganic carbon 14, shadow
+    integer (int_kind) :: do14ctot_shadow_ind = 0 ! dissolved organic carbon 14 (semi-labile+refractory), shadow
 
     ! Living tracers
     type(marbl_living_tracer_index_type), allocatable :: auto_inds(:)
@@ -678,10 +678,10 @@ contains
       call this%add_tracer_index('zoo14Ctot',   'ciso', this%zoo14Ctot_ind,   marbl_status_log)
 
       if (lNK_ciso_shadow_tracers) then
-        call this%add_tracer_index('di13c_shadow', 'ciso', this%di13c_shadow_ind, marbl_status_log)
-        call this%add_tracer_index('do13c_shadow', 'ciso', this%do13c_shadow_ind, marbl_status_log)
-        call this%add_tracer_index('di14c_shadow', 'ciso', this%di14c_shadow_ind, marbl_status_log)
-        call this%add_tracer_index('do14c_shadow', 'ciso', this%do14c_shadow_ind, marbl_status_log)
+        call this%add_tracer_index('di13c_shadow',    'ciso', this%di13c_shadow_ind,    marbl_status_log)
+        call this%add_tracer_index('do13ctot_shadow', 'ciso', this%do13ctot_shadow_ind, marbl_status_log)
+        call this%add_tracer_index('di14c_shadow',    'ciso', this%di14c_shadow_ind,    marbl_status_log)
+        call this%add_tracer_index('do14ctot_shadow', 'ciso', this%do14ctot_shadow_ind, marbl_status_log)
       end if
 
       do n=1,autotroph_cnt

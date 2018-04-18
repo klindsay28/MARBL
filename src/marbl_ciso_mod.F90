@@ -118,18 +118,18 @@ contains
     !  initialize non-autotroph metadata values
     !-----------------------------------------------------------------------
 
-    associate(di13c_ind         => marbl_tracer_indices%di13c_ind,            &
-              do13ctot_ind      => marbl_tracer_indices%do13ctot_ind,         &
-              zoo13Ctot_ind     => marbl_tracer_indices%zoo13Ctot_ind,        &
-              di14c_ind         => marbl_tracer_indices%di14c_ind,            &
-              do14ctot_ind      => marbl_tracer_indices%do14ctot_ind,         &
-              zoo14Ctot_ind     => marbl_tracer_indices%zoo14Ctot_ind,        &
-              di13c_shadow_ind  => marbl_tracer_indices%di13c_shadow_ind,     &
-              do13c_shadow_ind  => marbl_tracer_indices%do13c_shadow_ind,     &
-              di14c_shadow_ind  => marbl_tracer_indices%di14c_shadow_ind,     &
-              do14c_shadow_ind  => marbl_tracer_indices%do14c_shadow_ind,     &
-              ciso_ind_beg      => marbl_tracer_indices%ciso%ind_beg,         &
-              ciso_ind_end      => marbl_tracer_indices%ciso%ind_end          &
+    associate(di13c_ind           => marbl_tracer_indices%di13c_ind,            &
+              do13ctot_ind        => marbl_tracer_indices%do13ctot_ind,         &
+              zoo13Ctot_ind       => marbl_tracer_indices%zoo13Ctot_ind,        &
+              di14c_ind           => marbl_tracer_indices%di14c_ind,            &
+              do14ctot_ind        => marbl_tracer_indices%do14ctot_ind,         &
+              zoo14Ctot_ind       => marbl_tracer_indices%zoo14Ctot_ind,        &
+              di13c_shadow_ind    => marbl_tracer_indices%di13c_shadow_ind,     &
+              do13ctot_shadow_ind => marbl_tracer_indices%do13ctot_shadow_ind,  &
+              di14c_shadow_ind    => marbl_tracer_indices%di14c_shadow_ind,     &
+              do14ctot_shadow_ind => marbl_tracer_indices%do14ctot_shadow_ind,  &
+              ciso_ind_beg        => marbl_tracer_indices%ciso%ind_beg,         &
+              ciso_ind_end        => marbl_tracer_indices%ciso%ind_end          &
              )
 
     ! All CISO tracers share units, tend_units, flux_units, and
@@ -163,14 +163,14 @@ contains
       marbl_tracer_metadata(di13c_shadow_ind)%short_name='DI13C_SHADOW'
       marbl_tracer_metadata(di13c_shadow_ind)%long_name='Dissolved Inorganic Carbon-13, Shadow'
 
-      marbl_tracer_metadata(do13c_shadow_ind)%short_name='DO13C_SHADOW'
-      marbl_tracer_metadata(do13c_shadow_ind)%long_name='Dissolved Organic Carbon-13, Shadow'
+      marbl_tracer_metadata(do13ctot_shadow_ind)%short_name='DO13Ctot_SHADOW'
+      marbl_tracer_metadata(do13ctot_shadow_ind)%long_name='Dissolved Organic Carbon-13 (semi-labile+refractory), Shadow'
 
       marbl_tracer_metadata(di14c_shadow_ind)%short_name='DI14C_SHADOW'
       marbl_tracer_metadata(di14c_shadow_ind)%long_name='Dissolved Inorganic Carbon-14, Shadow'
 
-      marbl_tracer_metadata(do14c_shadow_ind)%short_name='DO14C_SHADOW'
-      marbl_tracer_metadata(do14c_shadow_ind)%long_name='Dissolved Organic Carbon-14, Shadow'
+      marbl_tracer_metadata(do14ctot_shadow_ind)%short_name='DO14Ctot_SHADOW'
+      marbl_tracer_metadata(do14ctot_shadow_ind)%long_name='Dissolved Organic Carbon-14 (semi-labile+refractory), Shadow'
     endif
 
     !-----------------------------------------------------------------------
@@ -317,9 +317,9 @@ contains
          zoo14Ctot_loc        ! local copy of model zoo14Ctot
 
     real (r8), dimension (marbl_domain%km) :: &
-         DO13C_SHADOW_loc,  & ! local copy of model DO13C_SHADOW
-         DI14C_SHADOW_loc,  & ! local copy of model DI14C_SHADOW
-         DO14C_SHADOW_loc     ! local copy of model DO14C_SHADOW
+         DO13Ctot_SHADOW_loc, & ! local copy of model DO13Ctot_SHADOW
+         DI14C_SHADOW_loc,    & ! local copy of model DI14C_SHADOW
+         DO14Ctot_SHADOW_loc    ! local copy of model DO14Ctot_SHADOW
 
     real (r8), dimension(marbl_domain%km) :: &
          mui_to_co2star_loc     ! local carbon autotroph instanteous growth rate over [CO2*] (m^3 /mol C /s)
@@ -384,8 +384,8 @@ contains
          decay_14Ctot         ! 14C decay loss term
 
     real (r8), dimension(marbl_domain%km) :: &
-         DO13C_SHADOW_remin,& ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
-         DO14C_SHADOW_remin   ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
+         DO13Ctot_SHADOW_remin,& ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
+         DO14Ctot_SHADOW_remin   ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
 
     !-------------------------------------------------------------
 
@@ -433,9 +433,9 @@ contains
          do14ctot_ind       => marbl_tracer_indices%do14ctot_ind               , &
          zoo14Ctot_ind      => marbl_tracer_indices%zoo14Ctot_ind              , &
          di13c_shadow_ind   => marbl_tracer_indices%di13c_shadow_ind           , &
-         do13c_shadow_ind   => marbl_tracer_indices%do13c_shadow_ind           , &
+         do13ctot_shadow_ind=> marbl_tracer_indices%do13ctot_shadow_ind        , &
          di14c_shadow_ind   => marbl_tracer_indices%di14c_shadow_ind           , &
-         do14c_shadow_ind   => marbl_tracer_indices%do14c_shadow_ind             &
+         do14ctot_shadow_ind=> marbl_tracer_indices%do14ctot_shadow_ind          &
          )
 
     !-----------------------------------------------------------------------
@@ -472,7 +472,7 @@ contains
 
     call setup_local_column_tracers(column_km, column_kmt, column_tracer, &
            marbl_tracer_indices, DI13C_loc, DO13Ctot_loc, zoo13Ctot_loc, DI14C_loc, &
-           DO14Ctot_loc, zoo14Ctot_loc, DO13C_SHADOW_loc, DI14C_SHADOW_loc, DO14C_SHADOW_loc)
+           DO14Ctot_loc, zoo14Ctot_loc, DO13Ctot_SHADOW_loc, DI14C_SHADOW_loc, DO14Ctot_SHADOW_loc)
 
     !-----------------------------------------------------------------------
     !  Create local copies of model column autotrophs, treat negative values as zero
@@ -517,8 +517,8 @@ contains
 
        if (lNK_ciso_shadow_tracers) then
           if (DOCtot_loc(k) > c0) then
-             R13C_DOC_SHADOW(k) = DO13C_SHADOW_loc(k) / DOCtot_loc(k)
-             R14C_DOC_SHADOW(k) = DO14C_SHADOW_loc(k) / DOCtot_loc(k)
+             R13C_DOC_SHADOW(k) = DO13Ctot_SHADOW_loc(k) / DOCtot_loc(k)
+             R14C_DOC_SHADOW(k) = DO14Ctot_SHADOW_loc(k) / DOCtot_loc(k)
           else
              R13C_DOC_SHADOW(k) = c0
              R14C_DOC_SHADOW(k) = c0
@@ -743,8 +743,8 @@ contains
        DO14Ctot_remin(k) = DOCtot_remin(k) * R14C_DOCtot(k)
 
        if (lNK_ciso_shadow_tracers) then
-          DO13C_SHADOW_remin(k) = DOCtot_remin(k) * R13C_DOC_SHADOW(k)
-          DO14C_SHADOW_remin(k) = DOCtot_remin(k) * R14C_DOC_SHADOW(k)
+          DO13Ctot_SHADOW_remin(k) = DOCtot_remin(k) * R13C_DOC_SHADOW(k)
+          DO14Ctot_SHADOW_remin(k) = DOCtot_remin(k) * R14C_DOC_SHADOW(k)
        end if
 
        !-----------------------------------------------------------------------
@@ -875,9 +875,9 @@ contains
        !-----------------------------------------------------------------------
 
        if (lNK_ciso_shadow_tracers) then
-          column_dtracer(do13c_shadow_ind,k) = DO13Ctot_prod(k) - DO13C_SHADOW_remin(k)
-          column_dtracer(do14c_shadow_ind,k) = DO14Ctot_prod(k) - DO14C_SHADOW_remin(k) &
-             - c14_lambda_inv_sec * DO14C_SHADOW_loc(k)
+          column_dtracer(do13ctot_shadow_ind,k) = DO13Ctot_prod(k) - DO13Ctot_SHADOW_remin(k)
+          column_dtracer(do14ctot_shadow_ind,k) = DO14Ctot_prod(k) - DO14Ctot_SHADOW_remin(k) &
+             - c14_lambda_inv_sec * DO14Ctot_SHADOW_loc(k)
        end if
 
        !-----------------------------------------------------------------------
@@ -908,9 +908,9 @@ contains
 
        if (lNK_ciso_shadow_tracers) then
           column_dtracer(di13c_shadow_ind,k) = column_dtracer(di13c_ind,k) &
-             + (DO13C_SHADOW_remin(k) - DO13Ctot_remin(k))
+             + (DO13Ctot_SHADOW_remin(k) - DO13Ctot_remin(k))
           column_dtracer(di14c_shadow_ind,k) = column_dtracer(di14c_ind,k) &
-             + (DO14C_SHADOW_remin(k) - DO14Ctot_remin(k)) &
+             + (DO14Ctot_SHADOW_remin(k) - DO14Ctot_remin(k)) &
              - c14_lambda_inv_sec * (DI14C_SHADOW_loc(k) - DI14C_loc(k))
        end if
 
@@ -971,8 +971,8 @@ contains
        eps_aq_g,            &
        eps_dic_g,           &
        decay_14Ctot,        &
-       DO13C_SHADOW_remin,  &
-       DO14C_SHADOW_remin,  &
+       DO13Ctot_SHADOW_remin,&
+       DO14Ctot_SHADOW_remin,&
        PO13C,               &
        PO14C,               &
        P_Ca13CO3,           &
@@ -1107,7 +1107,7 @@ contains
 
   subroutine setup_local_column_tracers(column_km, column_kmt, column_tracer, &
            marbl_tracer_indices, DI13C_loc, DO13Ctot_loc, zoo13Ctot_loc, DI14C_loc, &
-           DO14Ctot_loc, zoo14Ctot_loc, DO13C_SHADOW_loc, DI14C_SHADOW_loc, DO14C_SHADOW_loc)
+           DO14Ctot_loc, zoo14Ctot_loc, DO13Ctot_SHADOW_loc, DI14C_SHADOW_loc, DO14Ctot_SHADOW_loc)
 
     !-----------------------------------------------------------------------
     !  create local copies of model column_tracer
@@ -1129,9 +1129,9 @@ contains
     real (r8)         , intent(out) :: DI14C_loc(:)     ! (km) local copy of model DI14C
     real (r8)         , intent(out) :: DO14Ctot_loc(:)  ! (km) local copy of model DO14Ctot
     real (r8)         , intent(out) :: zoo14Ctot_loc(:) ! (km) local copy of model zoo14Ctot
-    real (r8)         , intent(out) :: DO13C_SHADOW_loc(:) ! (km) local copy of model DO13C_SHADOW
+    real (r8)         , intent(out) :: DO13Ctot_SHADOW_loc(:) ! (km) local copy of model DO13Ctot_SHADOW
     real (r8)         , intent(out) :: DI14C_SHADOW_loc(:) ! (km) local copy of model DI14C_SHADOW
-    real (r8)         , intent(out) :: DO14C_SHADOW_loc(:) ! (km) local copy of model DO14C_SHADOW
+    real (r8)         , intent(out) :: DO14Ctot_SHADOW_loc(:) ! (km) local copy of model DO14Ctot_SHADOW
     !-----------------------------------------------------------------------
     !  local variables
     !-----------------------------------------------------------------------
@@ -1168,19 +1168,19 @@ contains
     end associate
 
     if (lNK_ciso_shadow_tracers) then
-       associate(do13c_shadow_ind  => marbl_tracer_indices%do13c_shadow_ind, &
-                 di14c_shadow_ind  => marbl_tracer_indices%di14c_shadow_ind, &
-                 do14c_shadow_ind  => marbl_tracer_indices%do14c_shadow_ind)
+       associate(do13ctot_shadow_ind  => marbl_tracer_indices%do13ctot_shadow_ind, &
+                 di14c_shadow_ind     => marbl_tracer_indices%di14c_shadow_ind, &
+                 do14ctot_shadow_ind  => marbl_tracer_indices%do14ctot_shadow_ind)
        do k = 1,column_kmt
-          DO13C_SHADOW_loc(k)  = max(c0, column_tracer(do13c_shadow_ind,k))
-          DI14C_SHADOW_loc(k)  = max(c0, column_tracer(di14c_shadow_ind,k))
-          DO14C_SHADOW_loc(k)  = max(c0, column_tracer(do14c_shadow_ind,k))
+          DO13Ctot_SHADOW_loc(k)  = max(c0, column_tracer(do13ctot_shadow_ind,k))
+          DI14C_SHADOW_loc(k)     = max(c0, column_tracer(di14c_shadow_ind,k))
+          DO14Ctot_SHADOW_loc(k)  = max(c0, column_tracer(do14ctot_shadow_ind,k))
        end do
 
        do k = column_kmt+1, column_km
-          DO13C_SHADOW_loc(k)  = c0
-          DI14C_SHADOW_loc(k)  = c0
-          DO14C_SHADOW_loc(k)  = c0
+          DO13Ctot_SHADOW_loc(k)  = c0
+          DI14C_SHADOW_loc(k)     = c0
+          DO14Ctot_SHADOW_loc(k)  = c0
        end do
        end associate
     end if
