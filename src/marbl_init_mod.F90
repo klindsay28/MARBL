@@ -737,14 +737,14 @@ contains
         if (id .eq. ind%sss_id) then
           found = .true.
           surface_forcings(id)%metadata%varname       = 'sss'
-          surface_forcings(id)%metadata%field_units   = 'unknown units'
+          surface_forcings(id)%metadata%field_units   = 'psu'
         end if
 
         ! Sea-surface temperature
         if (id .eq. ind%sst_id) then
           found = .true.
           surface_forcings(id)%metadata%varname       = 'sst'
-          surface_forcings(id)%metadata%field_units   = 'degrees C'
+          surface_forcings(id)%metadata%field_units   = 'degC'
         end if
 
         ! Ice Fraction
@@ -772,14 +772,14 @@ contains
         if (id .eq. ind%nox_flux_id) then
           found = .true.
           surface_forcings(id)%metadata%varname       = 'NOx Flux'
-          surface_forcings(id)%metadata%field_units   = 'unknown units'
+          surface_forcings(id)%metadata%field_units   = 'nmol/cm^2/s'
         end if
 
         ! NHy Flux
         if (id .eq. ind%nhy_flux_id) then
           found = .true.
           surface_forcings(id)%metadata%varname       = 'NHy Flux'
-          surface_forcings(id)%metadata%field_units   = 'unknown units'
+          surface_forcings(id)%metadata%field_units   = 'nmol/cm^2/s'
         end if
 
         ! external C Flux
@@ -807,35 +807,35 @@ contains
         if (id .eq. ind%atm_pressure_id) then
           found = .true.
           surface_forcings(id)%metadata%varname       = 'Atmospheric Pressure'
-          surface_forcings(id)%metadata%field_units   = 'unknown units'
+          surface_forcings(id)%metadata%field_units   = 'atmospheres'
         end if
 
         ! xco2
         if (id .eq. ind%xco2_id) then
           found = .true.
           surface_forcings(id)%metadata%varname       = 'xco2'
-          surface_forcings(id)%metadata%field_units   = 'unknown units'
+          surface_forcings(id)%metadata%field_units   = 'ppmv'
         end if
 
         ! xco2_alt_co2
         if (id .eq. ind%xco2_alt_co2_id) then
           found = .true.
           surface_forcings(id)%metadata%varname       = 'xco2_alt_co2'
-          surface_forcings(id)%metadata%field_units   = 'unknown units'
+          surface_forcings(id)%metadata%field_units   = 'ppmv'
         end if
 
         ! d13c
         if (id .eq. ind%d13c_id) then
           found = .true.
           surface_forcings(id)%metadata%varname       = 'd13c'
-          surface_forcings(id)%metadata%field_units   = 'unknown units'
+          surface_forcings(id)%metadata%field_units   = 'permil'
         end if
 
         ! d14c
         if (id .eq. ind%d14c_id) then
           found = .true.
           surface_forcings(id)%metadata%varname       = 'd14c'
-          surface_forcings(id)%metadata%field_units   = 'unknown units'
+          surface_forcings(id)%metadata%field_units   = 'permil'
         end if
 
         if (.not.found) then
@@ -908,7 +908,7 @@ contains
         if (id .eq. ind%dustflux_id) then
           found = .true.
           interior_forcings(id)%metadata%varname     = 'Dust Flux'
-          interior_forcings(id)%metadata%field_units = 'need_units'
+          interior_forcings(id)%metadata%field_units = 'g/cm^2/s'
           call interior_forcings(id)%set_rank(num_elements, 0, marbl_status_log)
         end if
 
@@ -924,7 +924,7 @@ contains
         if (id .eq. ind%surf_shortwave_id) then
           found = .true.
           interior_forcings(id)%metadata%varname     = 'Surface Shortwave'
-          interior_forcings(id)%metadata%field_units = 'need_units' ! W/m^2?
+          interior_forcings(id)%metadata%field_units = 'W/m^2'
           call interior_forcings(id)%set_rank(num_elements, 1, marbl_status_log, &
                                               dim1 = num_PAR_subcols)
         end if
@@ -934,7 +934,7 @@ contains
         if (id .eq. ind%potemp_id) then
           found = .true.
           interior_forcings(id)%metadata%varname     = 'Potential Temperature'
-          interior_forcings(id)%metadata%field_units = 'Degrees C'
+          interior_forcings(id)%metadata%field_units = 'degC'
           call interior_forcings(id)%set_rank(num_elements, 1, marbl_status_log, &
                                               dim1 = num_levels)
         end if
@@ -943,7 +943,7 @@ contains
         if (id .eq. ind%salinity_id) then
           found = .true.
           interior_forcings(id)%metadata%varname     = 'Salinity'
-          interior_forcings(id)%metadata%field_units = 'need_units'
+          interior_forcings(id)%metadata%field_units = 'psu'
           call interior_forcings(id)%set_rank(num_elements, 1, marbl_status_log, &
                                               dim1 = num_levels)
         end if
@@ -952,7 +952,7 @@ contains
         if (id .eq. ind%pressure_id) then
           found = .true.
           interior_forcings(id)%metadata%varname     = 'Pressure'
-          interior_forcings(id)%metadata%field_units = 'need_units'
+          interior_forcings(id)%metadata%field_units = 'bars'
           call interior_forcings(id)%set_rank(num_elements, 1, marbl_status_log, &
                                               dim1 = num_levels)
         end if
@@ -961,7 +961,7 @@ contains
         if (id .eq. ind%fesedflux_id) then
           found = .true.
           interior_forcings(id)%metadata%varname     = 'Iron Sediment Flux'
-          interior_forcings(id)%metadata%field_units = 'need_units'
+          interior_forcings(id)%metadata%field_units = 'nmol/cm^2/s'
           call interior_forcings(id)%set_rank(num_elements, 1, marbl_status_log, &
                                               dim1 = num_levels)
         end if

@@ -95,7 +95,7 @@ contains
 
     integer(kind=int_kind)  , intent(in)  :: num_elements
     integer(kind=int_kind)  , intent(in)  :: num_active_elements
-    real(kind=r8)           , intent(in)  :: temp(num_elements)         ! temperature (degrees C)
+    real(kind=r8)           , intent(in)  :: temp(num_elements)         ! temperature (degC)
     real(kind=r8)           , intent(in)  :: salt(num_elements)         ! salinity (PSU)
     real(kind=r8)           , intent(in)  :: sw_press_bar(num_elements) ! seawater pressure (bars)
     real(kind=r8)           , intent(in)  :: dic(num_elements)          ! total inorganic carbon (nmol/cm^3)
@@ -1168,7 +1168,7 @@ contains
 
     integer(kind=int_kind)                           , intent(in)  :: num_elements
     integer(kind=int_kind)                           , intent(in)  :: num_active_elements
-    real(kind=r8)          , dimension(num_elements) , intent(in)  :: temp         ! temperature (degrees c)
+    real(kind=r8)          , dimension(num_elements) , intent(in)  :: temp         ! temperature (degC)
     real(kind=r8)          , dimension(num_elements) , intent(in)  :: salt         ! salinity (psu)
     real(kind=r8)          , dimension(num_elements) , intent(in)  :: sw_press_bar ! seawater pressure (bars)
     real(kind=r8)          , dimension(num_elements) , intent(out) :: co3_sat_calc ! co3 concentration at calcite saturation

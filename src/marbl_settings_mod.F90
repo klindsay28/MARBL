@@ -233,6 +233,14 @@ module marbl_settings_mod
 
   real(r8), target :: &
        parm_NK_nut_restore_invtau_peryear,& ! restoring inverse timescale for NK nutrient tracers
+       Jint_Ctot_thres_molpm2pyr,  & ! MARBL will abort if abs(Jint_Ctot) exceeds this threshold
+       Jint_Ctot_thres,            & ! MARBL will abort if abs(Jint_Ctot) exceeds this threshold (derived from Jint_Ctot_thres_molpm2pyr)
+       Jint_Ntot_thres,            & ! MARBL will abort if abs(Jint_Ntot) exceeds this threshold (derived from Jint_Ctot_thres)
+       Jint_Ptot_thres,            & ! MARBL will abort if abs(Jint_Ptot) exceeds this threshold (derived from Jint_Ctot_thres)
+       Jint_Sitot_thres,           & ! MARBL will abort if abs(Jint_Sitot) exceeds this threshold (derived from Jint_Ctot_thres)
+       Jint_Fetot_thres,           & ! MARBL will abort if abs(Jint_Fetot) exceeds this threshold (derived from Jint_Ctot_thres)
+       CISO_Jint_13Ctot_thres,     & ! MARBL will abort if abs(CISO_Jint_13Ctot) exceeds this threshold (derived from Jint_Ctot_thres)
+       CISO_Jint_14Ctot_thres,     & ! MARBL will abort if abs(CISO_Jint_14Ctot) exceeds this threshold (derived from Jint_Ctot_thres)
        parm_Fe_bioavail,           & ! fraction of Fe flux that is bioavailable
        parm_o2_min,                & ! min O2 needed for prod & consump. (nmol/cm^3)
        parm_o2_min_delta,          & ! width of min O2 range (nmol/cm^3)
@@ -353,6 +361,7 @@ contains
     lNK_ciso_shadow_tracers       = .false.         ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_NK_nut_restore_invtau_peryear = 10.0_r8         ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     particulate_flux_ref_depth    = 100             ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
+    Jint_Ctot_thres_molpm2pyr     = 1.0e-10_r8      ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_Fe_bioavail              = 1.0_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_o2_min                   = 5.0_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_o2_min_delta             = 5.0_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
@@ -362,9 +371,9 @@ contains
     parm_init_POC_bury_coeff      = 1.1_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_init_POP_bury_coeff      = 1.1_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_init_bSi_bury_coeff      = 1.0_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
-    parm_Fe_scavenge_rate0        = 15.0_r8         ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
+    parm_Fe_scavenge_rate0        = 18.0_r8         ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_Lig_scavenge_rate0       = 0.015_r8        ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
-    parm_FeLig_scavenge_rate0     = 1.3_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
+    parm_FeLig_scavenge_rate0     = 1.4_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_Lig_degrade_rate0        = 0.000094_r8     ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_Fe_desorption_rate0      = 1.0e-6_r8       ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_f_prod_sp_CaCO3          = 0.070_r8        ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
@@ -374,7 +383,7 @@ contains
     parm_sed_denitrif_coeff       = 1.0_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     bury_coeff_rmean_timescale_years = 10.0_r8      ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_scalelen_z    = (/ 100.0e2_r8, 250.0e2_r8, 500.0e2_r8, 1000.0e2_r8 /)  ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
-    parm_scalelen_vals = (/     1.0_r8,     2.2_r8,     4.0_r8,      5.0_r8 /)  ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
+    parm_scalelen_vals = (/     1.0_r8,     3.0_r8,     4.5_r8,      5.5_r8 /)  ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
 
     caco3_bury_thres_opt   = 'omega_calc'           ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     caco3_bury_thres_depth = 3000.0e2               ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
@@ -658,6 +667,15 @@ contains
     iptr      => particulate_flux_ref_depth
     call this%add_var(sname, lname, units, datatype, category,       &
                         marbl_status_log, iptr=iptr)
+    call check_and_log_add_var_error(marbl_status_log, sname, subname, labort_marbl_loc)
+
+    sname     = 'Jint_Ctot_thres_molpm2pyr'
+    lname     = 'MARBL will abort if abs(Jint_Ctot) exceeds this threshold'
+    units     = 'mol m-2 yr-1'
+    datatype  = 'real'
+    rptr      => Jint_Ctot_thres_molpm2pyr
+    call this%add_var(sname, lname, units, datatype, category,       &
+                        marbl_status_log, rptr=rptr)
     call check_and_log_add_var_error(marbl_status_log, sname, subname, labort_marbl_loc)
 
     sname     = 'parm_Fe_bioavail'
@@ -1159,7 +1177,7 @@ contains
 
       write(sname, "(2A)") trim(prefix), 'alphaPi_per_day'
       lname    = 'Initial slope of P_I curve (GD98)'
-      units    = 'mmol C m^2 / (mg Chl W day)'
+      units    = 'mmol m^2 / (mg Chl W day)'
       datatype = 'real'
       rptr     => autotrophs(n)%alphaPi_per_day
       call this%add_var(sname, lname, units, datatype, category,     &
@@ -1179,7 +1197,7 @@ contains
 
       write(sname, "(2A)") trim(prefix), 'thetaN_max'
       lname    = 'max thetaN (Chl/N)'
-      units    = 'mg Chl / mmol N'
+      units    = 'mg Chl / mmol'
       datatype = 'real'
       rptr     => autotrophs(n)%thetaN_max
       call this%add_var(sname, lname, units, datatype, category,     &
@@ -1209,7 +1227,7 @@ contains
 
       write(sname, "(2A)") trim(prefix), 'temp_thres'
       lname    = 'Temperature where concentration threshold and photosynthesis rate drop'
-      units    = 'deg C'
+      units    = 'degC'
       datatype = 'real'
       rptr     => autotrophs(n)%temp_thres
       call this%add_var(sname, lname, units, datatype, category,     &
@@ -1229,7 +1247,7 @@ contains
 
       write(sname, "(2A)") trim(prefix), 'mort2_per_day'
       lname    = 'quadratic mortality rate'
-      units    = '1/day/(mmol C/m^3)'
+      units    = '1/day/(mmol/m^3)'
       datatype = 'real'
       rptr     => autotrophs(n)%mort2_per_day
       call this%add_var(sname, lname, units, datatype, category,     &
@@ -1315,7 +1333,7 @@ contains
 
       write(sname, "(2A)") trim(prefix), 'z_mort2_0_per_day'
       lname    = 'Quadratic mortality rate'
-      units    = '1/day/(mmol C / m^3)'
+      units    = '1/day/(mmol/m^3)'
       datatype = 'real'
       rptr     => zooplankton(n)%z_mort2_0_per_day
       call this%add_var(sname, lname, units, datatype, category,       &
@@ -1392,7 +1410,7 @@ contains
 
         write(sname, "(2A)") trim(prefix), 'z_grz'
         lname    = 'Grazing coefficient'
-        units    = '(mmol C/m^3)^2'
+        units    = '(mmol/m^3)^2'
         datatype = 'real'
         rptr     => grazing(m,n)%z_grz
         call this%add_var(sname, lname, units, datatype, category,     &
@@ -1504,6 +1522,9 @@ contains
 
   subroutine marbl_settings_set_all_derived(marbl_status_log)
 
+    use marbl_constants_mod, only : mpercm, yps
+    use marbl_constants_mod, only : R13C_std, R14C_std
+
     type(marbl_log_type), intent(inout) :: marbl_status_log
 
     !---------------------------------------------------------------------------
@@ -1533,6 +1554,34 @@ contains
     parm_kappa_nitrif = dps * parm_kappa_nitrif_per_day
     call print_single_derived_parm('parm_kappa_nitrif_per_day', 'parm_kappa_nitrif', &
          parm_kappa_nitrif, subname, marbl_status_log)
+
+    Jint_Ctot_thres = 1.0e9_r8 * mpercm**2 * yps * Jint_Ctot_thres_molpm2pyr
+    call print_single_derived_parm('Jint_Ctot_thres_molpm2pyr', 'Jint_Ctot_thres', &
+         Jint_Ctot_thres, subname, marbl_status_log)
+
+    Jint_Ntot_thres = Q * Jint_Ctot_thres
+    call print_single_derived_parm('Jint_Ctot_thres', 'Jint_Ntot_thres', &
+         Jint_Ntot_thres, subname, marbl_status_log)
+
+    Jint_Ptot_thres = (c1/parm_Red_D_C_P) * Jint_Ctot_thres
+    call print_single_derived_parm('Jint_Ctot_thres', 'Jint_Ptot_thres', &
+         Jint_Ptot_thres, subname, marbl_status_log)
+
+    Jint_Sitot_thres = gQsi_0 * Jint_Ctot_thres
+    call print_single_derived_parm('Jint_Ctot_thres', 'Jint_Sitot_thres', &
+         Jint_Sitot_thres, subname, marbl_status_log)
+
+    Jint_Fetot_thres = parm_Red_Fe_C * Jint_Ctot_thres
+    call print_single_derived_parm('Jint_Ctot_thres', 'Jint_Fetot_thres', &
+         Jint_Fetot_thres, subname, marbl_status_log)
+
+    CISO_Jint_13Ctot_thres = R13C_std * Jint_Ctot_thres
+    call print_single_derived_parm('Jint_Ctot_thres', 'CISO_Jint_13Ctot_thres', &
+         CISO_Jint_13Ctot_thres, subname, marbl_status_log)
+
+    CISO_Jint_14Ctot_thres = R14C_std * Jint_Ctot_thres
+    call print_single_derived_parm('Jint_Ctot_thres', 'CISO_Jint_14Ctot_thres', &
+         CISO_Jint_14Ctot_thres, subname, marbl_status_log)
 
     call marbl_status_log%log_noerror('', subname)
 

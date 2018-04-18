@@ -32,8 +32,7 @@ module marbl_diagnostics_mod
   use marbl_interface_public_types, only : marbl_saved_state_type
   use marbl_interface_public_types, only : marbl_diagnostics_type
 
-  use marbl_pft_mod, only : marbl_autotroph_share_type
-  use marbl_pft_mod, only : marbl_zooplankton_share_type
+  use marbl_pft_mod, only : autotroph_local_type
   use marbl_pft_mod, only : autotroph_secondary_species_type
   use marbl_pft_mod, only : zooplankton_secondary_species_type
 
@@ -91,15 +90,10 @@ module marbl_diagnostics_mod
     integer(int_kind) :: DOCr_remin_zint
     integer(int_kind) :: DOCr_remin_zint_100m
     integer(int_kind) :: Jint_Ctot
-    integer(int_kind) :: Jint_100m_Ctot
     integer(int_kind) :: Jint_Ntot
-    integer(int_kind) :: Jint_100m_Ntot
     integer(int_kind) :: Jint_Ptot
-    integer(int_kind) :: Jint_100m_Ptot
     integer(int_kind) :: Jint_Sitot
-    integer(int_kind) :: Jint_100m_Sitot
     integer(int_kind) :: Jint_Fetot
-    integer(int_kind) :: Jint_100m_Fetot
 
     ! Particulate 2D diags
     integer(int_kind) :: calcToFloor
@@ -115,6 +109,16 @@ module marbl_diagnostics_mod
     integer(int_kind) :: pfeToSed
 
     ! Autotroph 2D diags
+    integer(int_kind), allocatable :: N_lim_surf(:)
+    integer(int_kind), allocatable :: N_lim_Cweight_avg_100m(:)
+    integer(int_kind), allocatable :: P_lim_surf(:)
+    integer(int_kind), allocatable :: P_lim_Cweight_avg_100m(:)
+    integer(int_kind), allocatable :: Fe_lim_surf(:)
+    integer(int_kind), allocatable :: Fe_lim_Cweight_avg_100m(:)
+    integer(int_kind), allocatable :: SiO3_lim_surf(:)
+    integer(int_kind), allocatable :: SiO3_lim_Cweight_avg_100m(:)
+    integer(int_kind), allocatable :: light_lim_surf(:)
+    integer(int_kind), allocatable :: light_lim_Cweight_avg_100m(:)
     integer(int_kind), allocatable :: photoC_zint(:)
     integer(int_kind), allocatable :: photoC_zint_100m(:)
     integer(int_kind), allocatable :: photoC_NO3_zint(:)
@@ -195,6 +199,8 @@ module marbl_diagnostics_mod
     integer(int_kind) :: Fefree
     integer(int_kind) :: Lig_photochem
     integer(int_kind) :: Lig_deg
+    integer(int_kind) :: fesedflux
+
 
     ! Particulate 2D diags
     integer(int_kind) :: POC_FLUX_at_ref_depth
@@ -241,11 +247,6 @@ module marbl_diagnostics_mod
 
     ! Autotroph 3D diags
     integer(int_kind), allocatable :: Qp(:)
-    integer(int_kind), allocatable :: N_lim(:)
-    integer(int_kind), allocatable :: P_lim(:)
-    integer(int_kind), allocatable :: Fe_lim(:)
-    integer(int_kind), allocatable :: SiO3_lim(:)
-    integer(int_kind), allocatable :: light_lim(:)
     integer(int_kind), allocatable :: photoC(:)
     integer(int_kind), allocatable :: photoC_NO3(:)
     integer(int_kind), allocatable :: photoFe(:)
@@ -328,8 +329,6 @@ module marbl_diagnostics_mod
      integer (int_kind) :: CISO_DO14Ctot_remin                                ! do14ctot remineralization
      integer (int_kind) :: CISO_Jint_13Ctot                                   ! vertically integrated source sink term, 13Ctot
      integer (int_kind) :: CISO_Jint_14Ctot                                   ! vertically integrated source sink term, 14Ctot
-     integer (int_kind) :: CISO_Jint_100m_13Ctot                              ! vertically integrated source sink term, 0-100m, 13Ctot
-     integer (int_kind) :: CISO_Jint_100m_14Ctot                              ! vertically integrated source sink term, 0-100m, 14Ctot
      integer (int_kind) :: CISO_zooC_d13C                                     ! if for d13C of zooC
      integer (int_kind) :: CISO_zooC_d14C                                     ! if for d14C of zooC
      integer (int_kind) :: CISO_DOCtot_d13C                                   ! if for d13C of DOCtot
@@ -513,7 +512,7 @@ contains
 
       lname    = 'O2 Schmidt Number'
       sname    = 'SCHMIDT_O2'
-      units    = 'none'
+      units    = '1'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -597,7 +596,7 @@ contains
 
       lname    = 'CO2 Schmidt Number'
       sname    = 'SCHMIDT_CO2'
-      units    = 'none'
+      units    = '1'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -621,7 +620,7 @@ contains
 
       lname    = 'Surface pH'
       sname    = 'PH'
-      units    = 'none'
+      units    = '1'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -705,7 +704,7 @@ contains
 
       lname    = 'Surface pH, Alternative CO2'
       sname    = 'PH_ALT_CO2'
-      units    = 'none'
+      units    = '1'
       vgrid    = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -1244,18 +1243,6 @@ contains
         return
       end if
 
-      lname = 'Vertical Integral of Conservative Subterms of Source Sink Term for Ctot, 0-100m'
-      sname = 'Jint_100m_Ctot'
-      units = 'mmol/m^3 cm/s'
-      vgrid = 'none'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%Jint_100m_Ctot, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
       lname = 'Vertical Integral of Conservative Subterms of Source Sink Term for Ntot'
       sname = 'Jint_Ntot'
       units = 'mmol/m^3 cm/s'
@@ -1263,18 +1250,6 @@ contains
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
            ind%Jint_Ntot, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
-      lname = 'Vertical Integral of Conservative Subterms of Source Sink Term for Ntot, 0-100m'
-      sname = 'Jint_100m_Ntot'
-      units = 'mmol/m^3 cm/s'
-      vgrid = 'none'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%Jint_100m_Ntot, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
@@ -1292,18 +1267,6 @@ contains
         return
       end if
 
-      lname = 'Vertical Integral of Conservative Subterms of Source Sink Term for Ptot, 0-100m'
-      sname = 'Jint_100m_Ptot'
-      units = 'mmol/m^3 cm/s'
-      vgrid = 'none'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%Jint_100m_Ptot, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
       lname = 'Vertical Integral of Conservative Subterms of Source Sink Term for Sitot'
       sname = 'Jint_Sitot'
       units = 'mmol/m^3 cm/s'
@@ -1316,18 +1279,6 @@ contains
         return
       end if
 
-      lname = 'Vertical Integral of Conservative Subterms of Source Sink Term for Sitot, 0-100m'
-      sname = 'Jint_100m_Sitot'
-      units = 'mmol/m^3 cm/s'
-      vgrid = 'none'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%Jint_100m_Sitot, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
       lname = 'Vertical Integral of Conservative Subterms of Source Sink Term for Fetot'
       sname = 'Jint_Fetot'
       units = 'mmol/m^3 cm/s'
@@ -1335,18 +1286,6 @@ contains
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
            ind%Jint_Fetot, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
-      lname = 'Vertical Integral of Conservative Subterms of Source Sink Term for Fetot, 0-100m'
-      sname = 'Jint_100m_Fetot'
-      units = 'mmol/m^3 cm/s'
-      vgrid = 'none'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%Jint_100m_Fetot, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
@@ -1367,7 +1306,7 @@ contains
 
       lname = 'CaCO3 Flux to Sediments'
       sname = 'calcToSed'
-      units = 'nmolC/cm^2/s'
+      units = 'nmol/cm^2/s'
       vgrid = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -1379,7 +1318,7 @@ contains
 
       lname = 'CaCO3 Flux to Sediments, Alternative CO2'
       sname = 'calcToSed_ALT_CO2'
-      units = 'nmolC/cm^2/s'
+      units = 'nmol/cm^2/s'
       vgrid = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -1391,7 +1330,7 @@ contains
 
       lname = 'POC Flux to Sediments'
       sname = 'pocToSed'
-      units = 'nmolC/cm^2/s'
+      units = 'nmol/cm^2/s'
       vgrid = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -1403,7 +1342,7 @@ contains
 
       lname = 'nitrogen burial Flux to Sediments'
       sname = 'ponToSed'
-      units = 'nmolN/cm^2/s'
+      units = 'nmol/cm^2/s'
       vgrid = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -1415,7 +1354,7 @@ contains
 
       lname = 'nitrogen loss in Sediments'
       sname = 'SedDenitrif'
-      units = 'nmolN/cm^2/s'
+      units = 'nmol/cm^2/s'
       vgrid = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -1427,7 +1366,7 @@ contains
 
       lname = 'non-oxic,non-dentr remin in Sediments'
       sname = 'OtherRemin'
-      units = 'nmolC/cm^2/s'
+      units = 'nmol/cm^2/s'
       vgrid = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -1439,7 +1378,7 @@ contains
 
       lname = 'phosphorus Flux to Sediments'
       sname = 'popToSed'
-      units = 'nmolP/cm^2/s'
+      units = 'nmol/cm^2/s'
       vgrid = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -1451,7 +1390,7 @@ contains
 
       lname = 'biogenic Si Flux to Sediments'
       sname = 'bsiToSed'
-      units = 'nmolSi/cm^2/s'
+      units = 'nmol/cm^2/s'
       vgrid = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -1475,7 +1414,7 @@ contains
 
       lname = 'pFe Flux to Sediments'
       sname = 'pfeToSed'
-      units = 'nmolFe/cm^2/s'
+      units = 'nmol/cm^2/s'
       vgrid = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -1487,6 +1426,16 @@ contains
 
       ! Autotroph 2D diags
       if (.not.ind%lconstructed()) then
+        allocate(ind%N_lim_surf(autotroph_cnt))
+        allocate(ind%N_lim_Cweight_avg_100m(autotroph_cnt))
+        allocate(ind%P_lim_surf(autotroph_cnt))
+        allocate(ind%P_lim_Cweight_avg_100m(autotroph_cnt))
+        allocate(ind%Fe_lim_surf(autotroph_cnt))
+        allocate(ind%Fe_lim_Cweight_avg_100m(autotroph_cnt))
+        allocate(ind%SiO3_lim_surf(autotroph_cnt))
+        allocate(ind%SiO3_lim_Cweight_avg_100m(autotroph_cnt))
+        allocate(ind%light_lim_surf(autotroph_cnt))
+        allocate(ind%light_lim_Cweight_avg_100m(autotroph_cnt))
         allocate(ind%photoC_zint(autotroph_cnt))
         allocate(ind%photoC_zint_100m(autotroph_cnt))
         allocate(ind%photoC_NO3_zint(autotroph_cnt))
@@ -1510,6 +1459,131 @@ contains
         allocate(ind%auto_agg_zint_100m(autotroph_cnt))
       end if
       do n=1,autotroph_cnt
+        lname = trim(autotrophs(n)%lname) // ' N Limitation, Surface'
+        sname = trim(autotrophs(n)%sname) // '_N_lim_surf'
+        units = '1'
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%N_lim_surf(n), marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = trim(autotrophs(n)%lname) // ' N Limitation, carbon biomass weighted average over 0-100m'
+        sname = trim(autotrophs(n)%sname) // '_N_lim_Cweight_avg_100m'
+        units = '1'
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%N_lim_Cweight_avg_100m(n), marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = trim(autotrophs(n)%lname) // ' P Limitation, Surface'
+        sname = trim(autotrophs(n)%sname) // '_P_lim_surf'
+        units = '1'
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%P_lim_surf(n), marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = trim(autotrophs(n)%lname) // ' P Limitation, carbon biomass weighted average over 0-100m'
+        sname = trim(autotrophs(n)%sname) // '_P_lim_Cweight_avg_100m'
+        units = '1'
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%P_lim_Cweight_avg_100m(n), marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = trim(autotrophs(n)%lname) // ' Fe Limitation, Surface'
+        sname = trim(autotrophs(n)%sname) // '_Fe_lim_surf'
+        units = '1'
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%Fe_lim_surf(n), marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = trim(autotrophs(n)%lname) // ' Fe Limitation, carbon biomass weighted average over 0-100m'
+        sname = trim(autotrophs(n)%sname) // '_Fe_lim_Cweight_avg_100m'
+        units = '1'
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%Fe_lim_Cweight_avg_100m(n), marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        if (autotrophs(n)%silicifier) then
+          lname = trim(autotrophs(n)%lname) // ' SiO3 Limitation, Surface'
+          sname = trim(autotrophs(n)%sname) // '_SiO3_lim_surf'
+          units = '1'
+          vgrid = 'none'
+          truncate = .false.
+          call diags%add_diagnostic(lname, sname, units, vgrid, truncate, &
+               ind%SiO3_lim_surf(n), marbl_status_log)
+          if (marbl_status_log%labort_marbl) then
+            call log_add_diagnostics_error(marbl_status_log, sname, subname)
+            return
+          end if
+
+          lname = trim(autotrophs(n)%lname) // ' SiO3 Limitation, carbon biomass weighted average over 0-100m'
+          sname = trim(autotrophs(n)%sname) // '_SiO3_lim_Cweight_avg_100m'
+          units = '1'
+          vgrid = 'none'
+          truncate = .false.
+          call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+               ind%SiO3_lim_Cweight_avg_100m(n), marbl_status_log)
+          if (marbl_status_log%labort_marbl) then
+            call log_add_diagnostics_error(marbl_status_log, sname, subname)
+            return
+          end if
+        else
+          ind%SiO3_lim_surf(n) = -1
+          ind%SiO3_lim_Cweight_avg_100m(n) = -1
+        end if
+
+        lname = trim(autotrophs(n)%lname) // ' Light Limitation, Surface'
+        sname = trim(autotrophs(n)%sname) // '_light_lim_surf'
+        units = '1'
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%light_lim_surf(n), marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = trim(autotrophs(n)%lname) // ' Light Limitation, carbon biomass weighted average over 0-100m'
+        sname = trim(autotrophs(n)%sname) // '_light_lim_Cweight_avg_100m'
+        units = '1'
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%light_lim_Cweight_avg_100m(n), marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
         lname = trim(autotrophs(n)%lname) // ' C Fixation Vertical Integral'
         sname = 'photoC_' // trim(autotrophs(n)%sname) // '_zint'
         units = 'mmol/m^3 cm/s'
@@ -2059,7 +2133,7 @@ contains
 
       lname = 'pH'
       sname = 'pH_3D'
-      units = 'none'
+      units = '1'
       vgrid = 'layer_avg'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -2107,7 +2181,7 @@ contains
 
       lname = 'pH, Alternative CO2'
       sname = 'pH_3D_ALT_CO2'
-      units = 'none'
+      units = '1'
       vgrid = 'layer_avg'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -2448,6 +2522,18 @@ contains
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
            ind%Lig_deg, marbl_status_log)
+      if (marbl_status_log%labort_marbl) then
+        call log_add_diagnostics_error(marbl_status_log, sname, subname)
+        return
+      end if
+
+      lname = 'Iron Sediment Flux'
+      sname = 'FESEDFLUX'
+      units = 'nmol/cm^2/s'
+      vgrid = 'layer_avg'
+      truncate = .false.
+      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+           ind%fesedflux, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
@@ -2868,7 +2954,7 @@ contains
 
       lname = 'Dust Flux into Cell'
       sname = 'dust_FLUX_IN'
-      units = 'ng/s/m^2'
+      units = 'g/cm^2/s'
       vgrid = 'layer_avg'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -2880,7 +2966,7 @@ contains
 
       lname = 'Dust Remineralization'
       sname = 'dust_REMIN'
-      units = 'mmol/m^3/s'
+      units = 'g/cm^3/s'
       vgrid = 'layer_avg'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
@@ -2929,11 +3015,6 @@ contains
       ! Autotroph 3D diags
       if (.not.ind%lconstructed()) then
         allocate(ind%Qp(autotroph_cnt))
-        allocate(ind%N_lim(autotroph_cnt))
-        allocate(ind%P_lim(autotroph_cnt))
-        allocate(ind%Fe_lim(autotroph_cnt))
-        allocate(ind%SiO3_lim(autotroph_cnt))
-        allocate(ind%light_lim(autotroph_cnt))
         allocate(ind%photoC(autotroph_cnt))
         allocate(ind%photoC_NO3(autotroph_cnt))
         allocate(ind%photoFe(autotroph_cnt))
@@ -2957,7 +3038,7 @@ contains
         if (lvariable_PtoC) then
           lname = trim(autotrophs(n)%lname) // ' P:C ratio'
           sname = trim(autotrophs(n)%sname) // '_Qp'
-          units = 'none'
+          units = '1'
           vgrid = 'layer_avg'
           truncate = .true.
           call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
@@ -2968,70 +3049,6 @@ contains
           end if
         else
           ind%Qp(n) = -1
-        end if
-
-        lname = trim(autotrophs(n)%lname) // ' N Limitation'
-        sname = trim(autotrophs(n)%sname) // '_N_lim'
-        units = 'none'
-        vgrid = 'layer_avg'
-        truncate = .true.
-        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%N_lim(n), marbl_status_log)
-        if (marbl_status_log%labort_marbl) then
-          call log_add_diagnostics_error(marbl_status_log, sname, subname)
-          return
-        end if
-
-        lname = trim(autotrophs(n)%lname) // ' P Limitation'
-        sname = trim(autotrophs(n)%sname) // '_P_lim'
-        units = 'none'
-        vgrid = 'layer_avg'
-        truncate = .true.
-        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%P_lim(n), marbl_status_log)
-        if (marbl_status_log%labort_marbl) then
-          call log_add_diagnostics_error(marbl_status_log, sname, subname)
-          return
-        end if
-
-        lname = trim(autotrophs(n)%lname) // ' Fe Limitation'
-        sname = trim(autotrophs(n)%sname) // '_Fe_lim'
-        units = 'none'
-        vgrid = 'layer_avg'
-        truncate = .true.
-        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%Fe_lim(n), marbl_status_log)
-        if (marbl_status_log%labort_marbl) then
-          call log_add_diagnostics_error(marbl_status_log, sname, subname)
-          return
-        end if
-
-        if (autotrophs(n)%silicifier) then
-          lname = trim(autotrophs(n)%lname) // ' SiO3 Limitation'
-          sname = trim(autotrophs(n)%sname) // '_SiO3_lim'
-          units = 'none'
-          vgrid = 'layer_avg'
-          truncate = .true.
-          call diags%add_diagnostic(lname, sname, units, vgrid, truncate, &
-               ind%SiO3_lim(n), marbl_status_log)
-          if (marbl_status_log%labort_marbl) then
-            call log_add_diagnostics_error(marbl_status_log, sname, subname)
-            return
-          end if
-        else
-          ind%SiO3_lim(n) = -1
-        end if
-
-        lname = trim(autotrophs(n)%lname) // ' Light Limitation'
-        sname = trim(autotrophs(n)%sname) // '_light_lim'
-        units = 'none'
-        vgrid = 'layer_avg'
-        truncate = .true.
-        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%light_lim(n), marbl_status_log)
-        if (marbl_status_log%labort_marbl) then
-          call log_add_diagnostics_error(marbl_status_log, sname, subname)
-          return
         end if
 
         lname = trim(autotrophs(n)%lname) // ' C Fixation'
@@ -3853,30 +3870,6 @@ contains
           return
         end if
 
-        lname    = '13Ctot Source Sink Term Vertical Integral, 0-100m'
-        sname    = 'CISO_Jint_100m_13Ctot'
-        units    = 'mmol/m^3 cm/s'
-        vgrid    = 'none'
-        truncate = .false.
-        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%CISO_Jint_100m_13Ctot, marbl_status_log)
-        if (marbl_status_log%labort_marbl) then
-          call log_add_diagnostics_error(marbl_status_log, sname, subname)
-          return
-        end if
-
-        lname    = '14Ctot Source Sink Term Vertical Integral, 0-100m'
-        sname    = 'CISO_Jint_100m_14Ctot'
-        units    = 'mmol/m^3 cm/s'
-        vgrid    = 'none'
-        truncate = .false.
-        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%CISO_Jint_100m_14Ctot, marbl_status_log)
-        if (marbl_status_log%labort_marbl) then
-          call log_add_diagnostics_error(marbl_status_log, sname, subname)
-          return
-        end if
-
         !  Nonstandard autotroph 2D and 3D fields for each autotroph
         if (.not.ind%lconstructed()) then
           allocate(ind%CISO_eps_autotroph(autotroph_cnt))
@@ -4062,7 +4055,7 @@ contains
 
           lname    = trim(autotrophs(n)%lname) // ' instanteous growth rate over [CO2*]'
           sname    = 'CISO_mui_to_co2star_' // trim(autotrophs(n)%sname)
-          units    = 'm^3/mmol C/s'
+          units    = 'm^3/mmol/s'
           vgrid    = 'layer_avg'
           truncate = .false.
           call diags%add_diagnostic(lname, sname, units, vgrid, truncate, &
@@ -4104,7 +4097,7 @@ contains
 
         lname    = 'Ca13CO3 Flux to Sediments'
         sname    = 'calcToSed_13C'
-        units    = 'nmolC/cm^2/s'
+        units    = 'nmol/cm^2/s'
         vgrid    = 'none'
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
@@ -4116,7 +4109,7 @@ contains
 
         lname    = 'PO13C Flux to Sediments'
         sname    = 'pocToSed_13C'
-        units    = 'nmolC/cm^2/s'
+        units    = 'nmol/cm^2/s'
         vgrid    = 'none'
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
@@ -4128,7 +4121,7 @@ contains
 
         lname    = 'Ca14CO3 Flux to Sediments'
         sname    = 'calcToSed_14C'
-        units    = 'nmolC/cm^2/s'
+        units    = 'nmol/cm^2/s'
         vgrid    = 'none'
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
@@ -4140,7 +4133,7 @@ contains
 
         lname    = 'PO14C Flux to Sediments'
         sname    = 'pocToSed_14C'
-        units    = 'nmolC/cm^2/s'
+        units    = 'nmol/cm^2/s'
         vgrid    = 'none'
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
@@ -4210,6 +4203,7 @@ contains
        dtracers,                                      &
        marbl_tracer_indices,                          &
        carbonate,                                     &
+       autotroph_local,                               &
        autotroph_secondary_species,                   &
        zooplankton_secondary_species,                 &
        dissolved_organic_matter,                      &
@@ -4228,8 +4222,6 @@ contains
 
     use marbl_interface_private_types , only : marbl_interior_forcing_indexing_type
 
-    implicit none
-
     type (marbl_domain_type)                  , intent(in) :: domain
     type(marbl_interior_forcing_indexing_type), intent(in) :: interior_forcing_ind
 
@@ -4239,6 +4231,7 @@ contains
 
     type(marbl_tracer_index_type)             , intent(in) :: marbl_tracer_indices
     type (carbonate_type)                     , intent(in) :: carbonate(domain%km)
+    type (autotroph_local_type)               , intent(in) :: autotroph_local(autotroph_cnt, domain%km)
     type (autotroph_secondary_species_type)   , intent(in) :: autotroph_secondary_species(autotroph_cnt, domain%km)
     type (zooplankton_secondary_species_type) , intent(in) :: zooplankton_secondary_species(zooplankton_cnt, domain%km)
     type (dissolved_organic_matter_type)      , intent(in) :: dissolved_organic_matter(domain%km)
@@ -4288,13 +4281,12 @@ contains
     call store_diagnostics_carbonate(domain, carbonate,                       &
          marbl_interior_forcing_diags, marbl_status_log)
     if (marbl_status_log%labort_marbl) then
-      call marbl_status_log%log_error_trace('store_diagnostics_carbonate',    &
-           subname)
+      call marbl_status_log%log_error_trace('store_diagnostics_carbonate', subname)
       return
     end if
 
     call store_diagnostics_autotrophs(domain, &
-         autotroph_secondary_species, marbl_interior_forcing_diags)
+         autotroph_local, autotroph_secondary_species, marbl_interior_forcing_diags)
 
     call store_diagnostics_zooplankton(domain, &
          zooplankton_secondary_species, marbl_interior_forcing_diags)
@@ -4306,9 +4298,12 @@ contains
 
     associate( POC     => marbl_particulate_share%POC, &
                P_CaCO3 => marbl_particulate_share%P_CaCO3 )
-    call store_diagnostics_carbon_fluxes(domain, POC, P_CaCO3, dtracers,      &
-         marbl_tracer_indices, marbl_interior_forcing_diags)
-
+    call store_diagnostics_carbon_fluxes(domain, POC, P_CaCO3, dtracers, &
+         marbl_tracer_indices, marbl_interior_forcing_diags, marbl_status_log)
+    if (marbl_status_log%labort_marbl) then
+      call marbl_status_log%log_error_trace('store_diagnostics_carbon_fluxes', subname)
+      return
+    end if
     end associate
 
     call store_diagnostics_nitrification(&
@@ -4331,24 +4326,40 @@ contains
 
     call store_diagnostics_nitrogen_fluxes(domain, &
          PON_sed_loss, denitrif, sed_denitrif, autotroph_secondary_species, dtracers, &
-         marbl_tracer_indices, marbl_interior_forcing_diags)
+         marbl_tracer_indices, marbl_interior_forcing_diags, marbl_status_log)
+    if (marbl_status_log%labort_marbl) then
+      call marbl_status_log%log_error_trace('store_diagnostics_nitrogen_fluxes', subname)
+      return
+    end if
 
     associate( POP => marbl_particulate_share%POP )
     call store_diagnostics_phosphorus_fluxes(domain, POP, &
          autotroph_secondary_species, dtracers, &
-         marbl_tracer_indices, marbl_interior_forcing_diags)
+         marbl_tracer_indices, marbl_interior_forcing_diags, marbl_status_log)
+    if (marbl_status_log%labort_marbl) then
+      call marbl_status_log%log_error_trace('store_diagnostics_phosphorus_fluxes', subname)
+      return
+    end if
     end associate
 
     associate( P_SiO2 => marbl_particulate_share%P_SiO2 )
     call store_diagnostics_silicon_fluxes(domain, P_SiO2, dtracers,           &
-         marbl_tracer_indices, marbl_interior_forcing_diags)
+         marbl_tracer_indices, marbl_interior_forcing_diags, marbl_status_log)
+    if (marbl_status_log%labort_marbl) then
+      call marbl_status_log%log_error_trace('store_diagnostics_silicon_fluxes', subname)
+      return
+    end if
     end associate
 
     associate( dust   => marbl_particulate_share%dust, &
                P_iron => marbl_particulate_share%P_iron )
     call store_diagnostics_iron_fluxes(domain, P_iron, dust,                  &
          interior_forcings(interior_forcing_ind%fesedflux_id)%field_1d(1,:),  &
-         dtracers, marbl_tracer_indices, marbl_interior_forcing_diags)
+         dtracers, marbl_tracer_indices, marbl_interior_forcing_diags, marbl_status_log)
+    if (marbl_status_log%labort_marbl) then
+      call marbl_status_log%log_error_trace('store_diagnostics_iron_fluxes', subname)
+      return
+    end if
     end associate
 
     call store_diagnostics_interior_restore(interior_restore,                 &
@@ -4379,8 +4390,6 @@ contains
     use marbl_settings_mod   , only : lflux_gas_co2
     use marbl_settings_mod   , only : lNK_shadow_tracers
     use marbl_constants_mod  , only : mpercm
-
-    implicit none
 
     type(marbl_surface_forcing_indexing_type) , intent(in)    :: surface_forcing_ind
     type(marbl_forcing_fields_type)           , intent(in)    :: surface_input_forcings(:)
@@ -4527,10 +4536,7 @@ contains
     endif
 
     diags(ind_diag%NHx_SURFACE_EMIS)%field_2d(:) = nhx_surface_emis(:)
-
-    ! FIXME #63 : reported units of DUST_FLUX are g/cm^2/s, so this comment doesn't make sense
-    ! multiply DUST flux by mpercm (.01) to convert from model units (cm/s)(mmol/m^3) to mmol/s/m^2
-    diags(ind_diag%DUST_FLUX)%field_2d(:) = DUST_FLUX_IN(:)*mpercm
+    diags(ind_diag%DUST_FLUX)%field_2d(:) = DUST_FLUX_IN(:)
 
     end associate
 
@@ -4672,9 +4678,10 @@ contains
   !***********************************************************************
 
   subroutine store_diagnostics_autotrophs(marbl_domain, &
-       autotroph_secondary_species, marbl_interior_diags)
+       autotroph_local, autotroph_secondary_species, marbl_interior_diags)
 
     type(marbl_domain_type)                , intent(in)    :: marbl_domain
+    type(autotroph_local_type)             , intent(in)    :: autotroph_local(:,:) ! autotroph_cnt, km
     type(autotroph_secondary_species_type) , intent(in)    :: autotroph_secondary_species(:,:) ! autotroph_cnt, km
     type(marbl_diagnostics_type)           , intent(inout) :: marbl_interior_diags
 
@@ -4682,6 +4689,10 @@ contains
     !  local variables
     !-----------------------------------------------------------------------
     integer(int_kind) :: n
+    real(r8) :: autotrophC_weight(marbl_domain%km)
+    real(r8) :: autotrophC_zint_100m
+    real(r8) :: limterm(marbl_domain%km)
+    real(r8) :: limterm_zint_100m
     !-----------------------------------------------------------------------
 
     associate(                                     &
@@ -4704,19 +4715,52 @@ contains
     diags(ind%photoC_NO3_TOT_zint)%field_2d(1) = c0
 
     do n = 1, autotroph_cnt
+       ! compute biomass weighted average of limitation terms over 0..100m
+       autotrophC_weight(:) = autotroph_local(n,:)%C
+       call compute_vertical_integrals(autotrophC_weight, delta_z, kmt, near_surface_integral=autotrophC_zint_100m)
+
+       ! if biomass integral is zero, treat biomass as 1.0, in order to weight all layers equally wrt biomass
+       if (autotrophC_zint_100m == c0) then
+         autotrophC_weight(:) = c1
+         call compute_vertical_integrals(autotrophC_weight, delta_z, kmt, near_surface_integral=autotrophC_zint_100m)
+       end if
+
+       ! normalize weight, so that its integral is 1
+       autotrophC_weight(:) = autotrophC_weight(:) / autotrophC_zint_100m
+
+       diags(ind%N_lim_surf(n))%field_2d(1) = autotroph_secondary_species(n,1)%VNtot
+       limterm = autotroph_secondary_species(n,:)%VNtot * autotrophC_weight(:)
+       call compute_vertical_integrals(limterm, delta_z, kmt, &
+            near_surface_integral=diags(ind%N_lim_Cweight_avg_100m(n))%field_2d(1))
+
+       diags(ind%P_lim_surf(n))%field_2d(1) = autotroph_secondary_species(n,1)%VPtot
+       limterm = autotroph_secondary_species(n,:)%VPtot * autotrophC_weight(:)
+       call compute_vertical_integrals(limterm, delta_z, kmt, &
+            near_surface_integral=diags(ind%P_lim_Cweight_avg_100m(n))%field_2d(1))
+
+       diags(ind%Fe_lim_surf(n))%field_2d(1) = autotroph_secondary_species(n,1)%VFe
+       limterm = autotroph_secondary_species(n,:)%VFe * autotrophC_weight(:)
+       call compute_vertical_integrals(limterm, delta_z, kmt, &
+            near_surface_integral=diags(ind%Fe_lim_Cweight_avg_100m(n))%field_2d(1))
+
+       if (ind%SiO3_lim_surf(n).ne.-1) then
+          diags(ind%SiO3_lim_surf(n))%field_2d(1) = autotroph_secondary_species(n,1)%VSiO3
+       endif
+       if (ind%SiO3_lim_Cweight_avg_100m(n).ne.-1) then
+          limterm = autotroph_secondary_species(n,:)%VSiO3 * autotrophC_weight(:)
+          call compute_vertical_integrals(limterm, delta_z, kmt, &
+               near_surface_integral=diags(ind%SiO3_lim_Cweight_avg_100m(n))%field_2d(1))
+       endif
+
+       diags(ind%light_lim_surf(n))%field_2d(1) = autotroph_secondary_species(n,1)%light_lim
+       limterm = autotroph_secondary_species(n,:)%light_lim * autotrophC_weight(:)
+       call compute_vertical_integrals(limterm, delta_z, kmt, &
+            near_surface_integral=diags(ind%light_lim_Cweight_avg_100m(n))%field_2d(1))
+
        if (ind%Qp(n).ne.-1) then
-         diags(ind%Qp(n))%field_3d(:, 1)          = autotroph_secondary_species(n,:)%Qp
+         diags(ind%Qp(n))%field_3d(:, 1)        = autotroph_secondary_species(n,:)%Qp
        end if
 
-       diags(ind%N_lim(n))%field_3d(:, 1)       = autotroph_secondary_species(n,:)%VNtot
-       diags(ind%Fe_lim(n))%field_3d(:, 1)      = autotroph_secondary_species(n,:)%VFe
-       diags(ind%P_lim(n))%field_3d(:, 1)       = autotroph_secondary_species(n,:)%VPtot
-
-       if (ind%SiO3_lim(n).ne.-1) then
-          diags(ind%SiO3_lim(n))%field_3d(:, 1) = autotroph_secondary_species(n,:)%VSiO3
-       end if
-
-       diags(ind%light_lim(n))%field_3d(:, 1)   = autotroph_secondary_species(n,:)%light_lim
        diags(ind%photoNO3(n))%field_3d(:, 1)    = autotroph_secondary_species(n,:)%NO3_V
        diags(ind%photoNH4(n))%field_3d(:, 1)    = autotroph_secondary_species(n,:)%NH4_V
        diags(ind%PO4_uptake(n))%field_3d(:, 1)  = autotroph_secondary_species(n,:)%PO4_V
@@ -4846,8 +4890,6 @@ contains
     use marbl_settings_mod, only : PONremin_refract
     use marbl_settings_mod, only : POPremin_refract
 
-    implicit none
-
     type(marbl_domain_type)            , intent(in)    :: marbl_domain
     type(marbl_particulate_share_type) , intent(in)    :: marbl_particulate_share
     real(r8), dimension(:)             , intent(in)    :: PON_remin    ! km
@@ -4916,7 +4958,7 @@ contains
     diags(ind%SiO2_REMIN)%field_3d(:, 1)          = P_SiO2%remin
 
     diags(ind%dust_FLUX_IN)%field_3d(:, 1) = dust%sflux_in + dust%hflux_in
-    diags(ind%dust_REMIN)%field_3d(:, 1)   = P_SiO2%remin
+    diags(ind%dust_REMIN)%field_3d(:, 1)   = dust%remin
 
     diags(ind%P_iron_FLUX_at_ref_depth)%field_2d(1) = P_iron%flux_at_ref_depth
     diags(ind%P_iron_FLUX_IN)%field_3d(:, 1)        = P_iron%sflux_in + P_iron%hflux_in
@@ -5196,7 +5238,9 @@ contains
   !***********************************************************************
 
   subroutine store_diagnostics_carbon_fluxes(marbl_domain, POC, P_CaCO3, dtracers, &
-             marbl_tracer_indices, marbl_diags)
+             marbl_tracer_indices, marbl_diags, marbl_status_log)
+
+    use marbl_settings_mod, only : Jint_Ctot_thres
 
     type(marbl_domain_type)     , intent(in)    :: marbl_domain
     type(column_sinking_particle_type) , intent(in)    :: POC
@@ -5204,10 +5248,13 @@ contains
     real(r8)                           , intent(in)    :: dtracers(:,:)         ! tracer_cnt, km
     type(marbl_tracer_index_type)      , intent(in)    :: marbl_tracer_indices
     type(marbl_diagnostics_type)       , intent(inout) :: marbl_diags
+    type(marbl_log_type)               , intent(inout) :: marbl_status_log
 
     !-----------------------------------------------------------------------
     !  local variables
     !-----------------------------------------------------------------------
+    character(len=*), parameter :: subname = 'marbl_diagnostics_mod:store_diagnostics_carbon_fluxes'
+    character(len=char_len)     :: log_message
     integer(int_kind) :: n, auto_ind
     real(r8), dimension(marbl_domain%km) :: work
     !-----------------------------------------------------------------------
@@ -5238,8 +5285,15 @@ contains
 
     call compute_vertical_integrals(work, delta_z, kmt,                       &
          full_depth_integral=diags(ind%Jint_Ctot)%field_2d(1),                &
-         near_surface_integral=diags(ind%Jint_100m_Ctot)%field_2d(1),         &
          integrated_terms = POC%sed_loss + P_CaCO3%sed_loss)
+
+    if (abs(diags(ind%Jint_Ctot)%field_2d(1)) .gt. Jint_Ctot_thres) then
+       write(log_message,"(A,E11.3e3,A,E11.3e3)") &
+            'abs(Jint_Ctot)=', abs(diags(ind%Jint_Ctot)%field_2d(1)), &
+            ' exceeds Jint_Ctot_thres=', Jint_Ctot_thres
+       call marbl_status_log%log_error(log_message, subname, ElemInd=1)
+       return
+    end if
 
     end associate
 
@@ -5249,9 +5303,10 @@ contains
 
   subroutine store_diagnostics_nitrogen_fluxes(marbl_domain, &
        PON_sed_loss, denitrif, sed_denitrif, autotroph_secondary_species, dtracers, &
-       marbl_tracer_indices, marbl_diags)
+       marbl_tracer_indices, marbl_diags, marbl_status_log)
 
     use marbl_settings_mod, only : Q
+    use marbl_settings_mod, only : Jint_Ntot_thres
 
     type(marbl_domain_type)         , intent(in)    :: marbl_domain
     real(r8)                               , intent(in)    :: PON_sed_loss(:) ! km
@@ -5261,10 +5316,13 @@ contains
     real(r8)                               , intent(in)    :: dtracers(:,:)         ! tracer_cnt, km
     type(marbl_tracer_index_type)          , intent(in)    :: marbl_tracer_indices
     type(marbl_diagnostics_type)           , intent(inout) :: marbl_diags
+    type(marbl_log_type)                   , intent(inout) :: marbl_status_log
 
     !-----------------------------------------------------------------------
     !  local variables
     !-----------------------------------------------------------------------
+    character(len=*), parameter :: subname = 'marbl_diagnostics_mod:store_diagnostics_nitrogen_fluxes'
+    character(len=char_len)     :: log_message
     integer(int_kind) :: n
     real(r8), dimension(marbl_domain%km) :: work
     !-----------------------------------------------------------------------
@@ -5297,8 +5355,15 @@ contains
 
     call compute_vertical_integrals(work, delta_z, kmt,                       &
          full_depth_integral=diags(ind%Jint_Ntot)%field_2d(1),                &
-         near_surface_integral=diags(ind%Jint_100m_Ntot)%field_2d(1),         &
          integrated_terms = PON_sed_loss)
+
+    if (abs(diags(ind%Jint_Ntot)%field_2d(1)) .gt. Jint_Ntot_thres) then
+       write(log_message,"(A,E11.3e3,A,E11.3e3)") &
+            'abs(Jint_Ntot)=', abs(diags(ind%Jint_Ntot)%field_2d(1)), &
+            ' exceeds Jint_Ntot_thres=', Jint_Ntot_thres
+       call marbl_status_log%log_error(log_message, subname, ElemInd=1)
+       return
+    end if
 
     end associate
 
@@ -5308,10 +5373,11 @@ contains
 
   subroutine store_diagnostics_phosphorus_fluxes(marbl_domain, POP, &
        autotroph_secondary_species, dtracers, &
-       marbl_tracer_indices, marbl_diags)
+       marbl_tracer_indices, marbl_diags, marbl_status_log)
 
     use marbl_pft_mod, only : Qp_zoo
     use marbl_settings_mod, only : lvariable_PtoC
+    use marbl_settings_mod, only : Jint_Ptot_thres
 
     type(marbl_domain_type)                , intent(in)    :: marbl_domain
     type(column_sinking_particle_type)     , intent(in)    :: POP
@@ -5319,10 +5385,13 @@ contains
     real(r8)                               , intent(in)    :: dtracers(:,:)         ! tracer_cnt, km
     type(marbl_tracer_index_type)          , intent(in)    :: marbl_tracer_indices
     type(marbl_diagnostics_type)           , intent(inout) :: marbl_diags
+    type(marbl_log_type)                   , intent(inout) :: marbl_status_log
 
     !-----------------------------------------------------------------------
     !  local variables
     !-----------------------------------------------------------------------
+    character(len=*), parameter :: subname = 'marbl_diagnostics_mod:store_diagnostics_phosphorus_fluxes'
+    character(len=char_len)     :: log_message
     integer(int_kind) :: n
     real(r8), dimension(marbl_domain%km) :: work
     !-----------------------------------------------------------------------
@@ -5351,8 +5420,15 @@ contains
 
     call compute_vertical_integrals(work, delta_z, kmt,                       &
          full_depth_integral=diags(ind%Jint_Ptot)%field_2d(1),                &
-         near_surface_integral=diags(ind%Jint_100m_Ptot)%field_2d(1),         &
          integrated_terms = POP%sed_loss)
+
+    if (abs(diags(ind%Jint_Ptot)%field_2d(1)) .gt. Jint_Ptot_thres) then
+       write(log_message,"(A,E11.3e3,A,E11.3e3)") &
+            'abs(Jint_Ptot)=', abs(diags(ind%Jint_Ptot)%field_2d(1)), &
+            ' exceeds Jint_Ptot_thres=', Jint_Ptot_thres
+       call marbl_status_log%log_error(log_message, subname, ElemInd=1)
+       return
+    end if
 
     end associate
 
@@ -5361,17 +5437,22 @@ contains
   !***********************************************************************
 
   subroutine store_diagnostics_silicon_fluxes(marbl_domain, P_SiO2, dtracers, &
-       marbl_tracer_indices, marbl_diags)
+       marbl_tracer_indices, marbl_diags, marbl_status_log)
+
+    use marbl_settings_mod, only : Jint_Sitot_thres
 
     type(marbl_domain_type)            , intent(in)    :: marbl_domain
     type(column_sinking_particle_type) , intent(in)    :: P_SiO2
     real(r8)                           , intent(in)    :: dtracers(:,:)         ! tracer_cnt, km
     type(marbl_tracer_index_type)      , intent(in)    :: marbl_tracer_indices
     type(marbl_diagnostics_type)       , intent(inout) :: marbl_diags
+    type(marbl_log_type)               , intent(inout) :: marbl_status_log
 
     !-----------------------------------------------------------------------
     !  local variables
     !-----------------------------------------------------------------------
+    character(len=*), parameter :: subname = 'marbl_diagnostics_mod:store_diagnostics_silicon_fluxes'
+    character(len=char_len)     :: log_message
     integer(int_kind) :: n
     real(r8), dimension(marbl_domain%km) :: work
     !-----------------------------------------------------------------------
@@ -5395,8 +5476,15 @@ contains
 
     call compute_vertical_integrals(work, delta_z, kmt,                       &
          full_depth_integral=diags(ind%Jint_Sitot)%field_2d(1),               &
-         near_surface_integral=diags(ind%Jint_100m_Sitot)%field_2d(1),        &
          integrated_terms = P_SiO2%sed_loss)
+
+    if (abs(diags(ind%Jint_Sitot)%field_2d(1)) .gt. Jint_Sitot_thres) then
+       write(log_message,"(A,E11.3e3,A,E11.3e3)") &
+            'abs(Jint_Sitot)=', abs(diags(ind%Jint_Sitot)%field_2d(1)), &
+            ' exceeds Jint_Sitot_thres=', Jint_Sitot_thres
+       call marbl_status_log%log_error(log_message, subname, ElemInd=1)
+       return
+    end if
 
     end associate
 
@@ -5405,10 +5493,11 @@ contains
   !***********************************************************************
 
   subroutine store_diagnostics_iron_fluxes(marbl_domain, P_iron, dust, &
-             fesedflux, dtracers, marbl_tracer_indices, marbl_diags)
+             fesedflux, dtracers, marbl_tracer_indices, marbl_diags, marbl_status_log)
 
     use marbl_settings_mod, only : Qfe_zoo
     use marbl_settings_mod, only : dust_to_Fe
+    use marbl_settings_mod, only : Jint_Fetot_thres
 
     type(marbl_domain_type)            , intent(in)    :: marbl_domain
     type(column_sinking_particle_type) , intent(in)    :: P_iron
@@ -5417,10 +5506,13 @@ contains
     real(r8)                           , intent(in)    :: dtracers(:,:)         ! tracer_cnt, km
     type(marbl_tracer_index_type)      , intent(in)    :: marbl_tracer_indices
     type(marbl_diagnostics_type)       , intent(inout) :: marbl_diags
+    type(marbl_log_type)               , intent(inout) :: marbl_status_log
 
     !-----------------------------------------------------------------------
     !  local variables
     !-----------------------------------------------------------------------
+    character(len=*), parameter :: subname = 'marbl_diagnostics_mod:store_diagnostics_iron_fluxes'
+    character(len=char_len)     :: log_message
     real(r8), dimension(marbl_domain%km) :: work
     !-----------------------------------------------------------------------
 
@@ -5433,6 +5525,7 @@ contains
          fe_ind  => marbl_tracer_indices%fe_ind &
          )
 
+    diags(ind%fesedflux)%field_3d(:,1) = fesedflux(:)
     ! vertical integrals
     work = dtracers(fe_ind, :) +                                              &
            sum(dtracers(marbl_tracer_indices%auto_inds(:)%Fe_ind, :),dim=1) + &
@@ -5441,8 +5534,15 @@ contains
 
     call compute_vertical_integrals(work, delta_z, kmt,                       &
          full_depth_integral=diags(ind%Jint_Fetot)%field_2d(1),               &
-         near_surface_integral=diags(ind%Jint_100m_Fetot)%field_2d(1),        &
          integrated_terms = P_iron%sed_loss - fesedflux)
+
+    if (abs(diags(ind%Jint_Fetot)%field_2d(1)) .gt. Jint_Fetot_thres) then
+       write(log_message,"(A,E11.3e3,A,E11.3e3)") &
+            'abs(Jint_Fetot)=', abs(diags(ind%Jint_Fetot)%field_2d(1)), &
+            ' exceeds Jint_Fetot_thres=', Jint_Fetot_thres
+       call marbl_status_log%log_error(log_message, subname, ElemInd=1)
+       return
+    end if
 
     end associate
 
@@ -5496,33 +5596,35 @@ contains
        autotroph_d14C,      &
        autotrophCaCO3_d13C, &
        autotrophCaCO3_d14C, &
-       DIC_d13C,            &
-       DIC_d14C,            &
-       DOCtot_d13C,         &
-       DOCtot_d14C,         &
-       zooC_d13C,           &
-       zooC_d14C,           &
        photo13C,            &
        photo14C,            &
        eps_autotroph,       &
        mui_to_co2star,      &
        Ca13CO3_prod,        &
        Ca14CO3_prod,        &
+       DIC_d13C,            &
+       DIC_d14C,            &
+       DOCtot_d13C,         &
+       DOCtot_d14C,         &
+       zooC_d13C,           &
+       zooC_d14C,           &
        DO13Ctot_prod,       &
        DO14Ctot_prod,       &
        DO13Ctot_remin,      &
        DO14Ctot_remin,      &
        eps_aq_g,            &
        eps_dic_g,           &
+       decay_14Ctot,        &
+       DO13C_SHADOW_remin,  &
+       DO14C_SHADOW_remin,  &
        PO13C,               &
        PO14C,               &
        P_Ca13CO3,           &
        P_Ca14CO3,           &
-       DO13C_SHADOW_remin,  &
-       DO14C_SHADOW_remin,  &
        dtracers,            &
        marbl_tracer_indices,&
-       marbl_diags)
+       marbl_diags,         &
+       marbl_status_log)
 
     !---------------------------------------------------------------------
     ! !DESCRIPTION:
@@ -5530,8 +5632,8 @@ contains
     !---------------------------------------------------------------------
 
     use marbl_settings_mod, only : lNK_ciso_shadow_tracers
-
-    implicit none
+    use marbl_settings_mod, only : CISO_Jint_13Ctot_thres
+    use marbl_settings_mod, only : CISO_Jint_14Ctot_thres
 
     type(marbl_domain_type), intent(in)    :: marbl_domain
 
@@ -5549,25 +5651,22 @@ contains
 
     real (r8), intent(in),  dimension(marbl_domain%km) :: &
          DIC_d13C       , & ! d13C of DIC
-         DOCtot_d13C    , & ! d13C of DOCtot
-         zooC_d13C      , & ! d13C of zooC
          DIC_d14C       , & ! d14C of DIC
+         DOCtot_d13C    , & ! d13C of DOCtot
          DOCtot_d14C    , & ! d14C of DOCtot
+         zooC_d13C      , & ! d13C of zooC
          zooC_d14C      , & ! d14C of zooC
          DO13Ctot_prod  , & ! production of 13C DOCtot (mmol C/m^3/sec)
-         DO13Ctot_remin , & ! remineralization of 13C DOCtot (mmol C/m^3/sec)
          DO14Ctot_prod  , & ! production of 14C DOCtot (mmol C/m^3/sec)
+         DO13Ctot_remin , & ! remineralization of 13C DOCtot (mmol C/m^3/sec)
          DO14Ctot_remin , & ! remineralization of 14C DOCtot (mmol C/m^3/sec)
          eps_aq_g       , & ! equilibrium fractionation (CO2_gaseous <-> CO2_aq)
-         eps_dic_g          ! equilibrium fractionation between total DIC and gaseous CO2
+         eps_dic_g      , & ! equilibrium fractionation between total DIC and gaseous CO2
+         decay_14Ctot       ! 14C decay loss term
 
-    real (r8), intent(in),  dimension(marbl_domain%km) :: &
+    real (r8), dimension(marbl_domain%km) :: &
          DO13C_SHADOW_remin,& ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
          DO14C_SHADOW_remin   ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
-
-    real (r8), intent(in) :: dtracers(:,:) ! (tracer_cnt, km) computed source/sink terms
-
-    type(marbl_tracer_index_type), intent(in)      :: marbl_tracer_indices
 
     type(column_sinking_particle_type), intent(in) :: &
          PO13C,        &  ! base units = nmol 13C
@@ -5575,12 +5674,21 @@ contains
          P_Ca13CO3,    &  ! base units = nmol 13C CaCO3
          P_Ca14CO3        ! base units = nmol 14C CaCO3
 
+    real (r8), intent(in) :: dtracers(:,:) ! (tracer_cnt, km) computed source/sink terms
+
+    type(marbl_tracer_index_type), intent(in)      :: marbl_tracer_indices
+
     type(marbl_diagnostics_type), intent(inout) :: &
          marbl_diags
+
+    type(marbl_log_type), intent(inout) :: &
+         marbl_status_log
 
     !-----------------------------------------------------------------------
     !  local variables
     !-----------------------------------------------------------------------
+    character(len=*), parameter :: subname = 'marbl_diagnostics_mod:store_diagnostics_ciso_interior'
+    character(len=char_len)     :: log_message
     integer (int_kind) :: k, n, auto_ind
     real (r8)          :: work(marbl_domain%km)
     !-----------------------------------------------------------------------
@@ -5594,10 +5702,10 @@ contains
          ind     => marbl_interior_diag_ind, &
          di13c_ind     => marbl_tracer_indices%di13c_ind,    &
          do13ctot_ind  => marbl_tracer_indices%do13ctot_ind, &
-         zoo13c_ind    => marbl_tracer_indices%zoo13c_ind,   &
+         zoo13Ctot_ind    => marbl_tracer_indices%zoo13Ctot_ind,   &
          di14c_ind     => marbl_tracer_indices%di14c_ind,    &
          do14ctot_ind  => marbl_tracer_indices%do14ctot_ind, &
-         zoo14c_ind    => marbl_tracer_indices%zoo14c_ind    &
+         zoo14Ctot_ind    => marbl_tracer_indices%zoo14Ctot_ind    &
          )
 
     diags(ind%calcToSed_13C)%field_2d(1) = sum(P_Ca13CO3%sed_loss)
@@ -5612,9 +5720,9 @@ contains
     diags(ind%CISO_photo13C_TOT_zint)%field_2d(1) = sum(delta_z * sum(photo13C, dim=1))
     diags(ind%CISO_photo14C_TOT_zint)%field_2d(1) = sum(delta_z * sum(photo14C, dim=1))
 
-    ! Vertical integrals - CISO_Jint_13Ctot and Jint_100m_13Ctot
+    ! Vertical integrals - CISO_Jint_13Ctot
 
-    work(:) = dtracers(di13c_ind,:) + dtracers(do13ctot_ind,:) + dtracers(zoo13C_ind,:) &
+    work(:) = dtracers(di13c_ind,:) + dtracers(do13ctot_ind,:) + dtracers(zoo13Ctot_ind,:) &
          + sum(dtracers(marbl_tracer_indices%auto_inds(:)%C13_ind,:), dim=1)
     do auto_ind = 1, autotroph_cnt
        n = marbl_tracer_indices%auto_inds(auto_ind)%Ca13CO3_ind
@@ -5624,13 +5732,20 @@ contains
     end do
     call compute_vertical_integrals(work, delta_z, kmt,                       &
          full_depth_integral=diags(ind%CISO_Jint_13Ctot)%field_2d(1),         &
-         near_surface_integral=diags(ind%CISO_Jint_100m_13Ctot)%field_2d(1),  &
          integrated_terms = PO13C%sed_loss + P_Ca13CO3%sed_loss)
 
-    ! Vertical integral - CISO_Jint_14Ctot and Jint_100m_14Ctot
+    if (abs(diags(ind%CISO_Jint_13Ctot)%field_2d(1)) .gt. CISO_Jint_13Ctot_thres) then
+       write(log_message,"(A,E11.3e3,A,E11.3e3)") &
+            'abs(CISO_Jint_13Ctot)=', abs(diags(ind%CISO_Jint_13Ctot)%field_2d(1)), &
+            ' exceeds CISO_Jint_13Ctot_thres=', CISO_Jint_13Ctot_thres
+       call marbl_status_log%log_error(log_message, subname, ElemInd=1)
+       return
+    end if
 
-    work(:) = dtracers(di14c_ind,:) + dtracers(do14ctot_ind,:) + dtracers(zoo14C_ind,:) &
-         + sum(dtracers(marbl_tracer_indices%auto_inds(:)%C14_ind,:), dim=1)
+    ! Vertical integral - CISO_Jint_14Ctot
+
+    work(:) = dtracers(di14c_ind,:) + dtracers(do14ctot_ind,:) + dtracers(zoo14Ctot_ind,:) &
+         + sum(dtracers(marbl_tracer_indices%auto_inds(:)%C14_ind,:), dim=1) + decay_14Ctot
     do auto_ind = 1, autotroph_cnt
        n = marbl_tracer_indices%auto_inds(auto_ind)%Ca14CO3_ind
        if (n > 0) then
@@ -5639,8 +5754,15 @@ contains
     end do
     call compute_vertical_integrals(work, delta_z, kmt,                       &
          full_depth_integral=diags(ind%CISO_Jint_14Ctot)%field_2d(1),         &
-         near_surface_integral=diags(ind%CISO_Jint_100m_14Ctot)%field_2d(1),  &
          integrated_terms = PO14C%sed_loss + P_Ca14CO3%sed_loss)
+
+    if (abs(diags(ind%CISO_Jint_14Ctot)%field_2d(1)) .gt. CISO_Jint_14Ctot_thres) then
+       write(log_message,"(A,E11.3e3,A,E11.3e3)") &
+            'abs(CISO_Jint_14Ctot)=', abs(diags(ind%CISO_Jint_14Ctot)%field_2d(1)), &
+            ' exceeds CISO_Jint_14Ctot_thres=', CISO_Jint_14Ctot_thres
+       call marbl_status_log%log_error(log_message, subname, ElemInd=1)
+       return
+    end if
 
     ! Other vertical integrals
 
@@ -5761,8 +5883,6 @@ contains
 
     use marbl_constants_mod, only : R13c_std, R14c_std, c1000
     use marbl_settings_mod,  only : lNK_ciso_shadow_tracers
-
-    implicit none
 
     integer (int_kind)                 , intent(in)    :: num_elements
     real (r8), dimension(num_elements) , intent(in)    :: D13C           ! atm 13co2 value
@@ -5936,6 +6056,16 @@ contains
     class(marbl_interior_diagnostics_indexing_type), intent(inout) :: this
 
     if (this%lconstructed()) then
+      deallocate(this%N_lim_surf)
+      deallocate(this%N_lim_Cweight_avg_100m)
+      deallocate(this%P_lim_surf)
+      deallocate(this%P_lim_Cweight_avg_100m)
+      deallocate(this%Fe_lim_surf)
+      deallocate(this%Fe_lim_Cweight_avg_100m)
+      deallocate(this%SiO3_lim_surf)
+      deallocate(this%SiO3_lim_Cweight_avg_100m)
+      deallocate(this%light_lim_surf)
+      deallocate(this%light_lim_Cweight_avg_100m)
       deallocate(this%photoC_zint)
       deallocate(this%photoC_zint_100m)
       deallocate(this%photoC_NO3_zint)
@@ -5974,11 +6104,6 @@ contains
       deallocate(this%x_graze_zoo_zint)
       deallocate(this%x_graze_zoo_zint_100m)
       deallocate(this%Qp)
-      deallocate(this%N_lim)
-      deallocate(this%P_lim)
-      deallocate(this%Fe_lim)
-      deallocate(this%SiO3_lim)
-      deallocate(this%light_lim)
       deallocate(this%photoC)
       deallocate(this%photoC_NO3)
       deallocate(this%photoFe)

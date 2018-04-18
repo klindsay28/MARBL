@@ -163,6 +163,7 @@ module marbl_mod
   use marbl_interface_public_types, only : marbl_running_mean_0d_type
 
   use marbl_pft_mod, only : autotroph_type
+  use marbl_pft_mod, only : autotroph_local_type
   use marbl_pft_mod, only : zooplankton_type
   use marbl_pft_mod, only : autotroph_secondary_species_type
   use marbl_pft_mod, only : zooplankton_secondary_species_type
@@ -204,15 +205,6 @@ module marbl_mod
   type, private :: zooplankton_local_type
      real (r8) :: C  ! local copy of model zooplankton C
   end type zooplankton_local_type
-
-  type, private :: autotroph_local_type
-     real (r8) :: Chl   ! local copy of model autotroph Chl
-     real (r8) :: C     ! local copy of model autotroph C
-     real (r8) :: P     ! local copy of model autotroph P
-     real (r8) :: Fe    ! local copy of model autotroph Fe
-     real (r8) :: Si    ! local copy of model autotroph Si
-     real (r8) :: CaCO3 ! local copy of model autotroph CaCO3
-  end type autotroph_local_type
 
   integer (int_kind) :: glo_avg_field_ind_interior_CaCO3_bury = 0
   integer (int_kind) :: glo_avg_field_ind_interior_POC_bury = 0
@@ -792,6 +784,7 @@ contains
          dtracers,                                          &
          marbl_tracer_indices,                              &
          carbonate,                                         &
+         autotroph_local,                                   &
          autotroph_secondary_species,                       &
          zooplankton_secondary_species,                     &
          dissolved_organic_matter,                          &
@@ -879,7 +872,7 @@ contains
     !  parameters, from Armstrong et al. 2000
     !
     !  July 2002, length scale for excess POC and bSI modified by temperature
-    !  Value given here is at Tref of 30 deg. C, JKM
+    !  Value given here is at Tref of 30 degC, JKM
     !-----------------------------------------------------------------------
 
     POC%diss      = parm_POC_diss   ! diss. length (cm), modified by TEMP
@@ -1189,7 +1182,7 @@ contains
     DECAY_HardDust = exp(-delta_z(k) / 1.2e8_r8)
 
     !----------------------------------------------------------------------
-    !   Tref = 30.0 reference temperature (deg. C)
+    !   Tref = 30.0 reference temperature (degC)
     !   not currently being applied
     !----------------------------------------------------------------------
 !   TfuncS = 1.5_r8**(((temperature + T0_Kelvin) - (Tref + T0_Kelvin)) / c10)
@@ -1434,6 +1427,12 @@ contains
        endif
 
        POP%hflux_out(k) = POP%hflux_in(k)
+
+    else
+
+       POC%remin(k) = c0
+       POC%sflux_out(k) = c0
+       POC%hflux_out(k) = c0
 
     endif
 
@@ -2302,22 +2301,22 @@ contains
     !  FIXME: ensure that ph is computed, even if lflux_gas_co2=.false.
     !-----------------------------------------------------------------------
 
-    call marbl_comp_nhx_surface_emis(                &
-         num_elements     = num_elements,            &
-         nh4              = surface_vals(:,nh4_ind), &
-         ph               = ph_prev_surf,            &
-         sst              = sst,                     &
-         sss              = sss,                     &
-         u10_sqr          = u10_sqr,                 &
-         atmpres          = ap_used,                 &
-         ifrac            = ifrac,                   &
-         nhx_surface_emis = nhx_surface_emis)
-
-    if (sfo_ind%flux_nhx_id.ne.0) then
-       surface_forcing_output%sfo(sfo_ind%flux_nhx_id)%forcing_field = nhx_surface_emis
-    end if
-
     if (lcompute_nhx_surface_emis) then
+      call marbl_comp_nhx_surface_emis(                &
+           num_elements     = num_elements,            &
+           nh4              = surface_vals(:,nh4_ind), &
+           ph               = ph_prev_surf,            &
+           sst              = sst,                     &
+           sss              = sss,                     &
+           u10_sqr          = u10_sqr,                 &
+           atmpres          = ap_used,                 &
+           ifrac            = ifrac,                   &
+           nhx_surface_emis = nhx_surface_emis)
+
+      if (sfo_ind%flux_nhx_id.ne.0) then
+         surface_forcing_output%sfo(sfo_ind%flux_nhx_id)%forcing_field = nhx_surface_emis
+      end if
+
       stf(:, nh4_ind) = stf(:, nh4_ind) - nhx_surface_emis(:)
     endif
 
@@ -3000,7 +2999,7 @@ contains
   subroutine marbl_compute_function_scaling(temperature, Tfunc)
 
     !-----------------------------------------------------------------------
-    !  Tref = 30.0 reference temperature (deg. C)
+    !  Tref = 30.0 reference temperature (degC)
     !  Using q10 formulation with Q10 value of 2.0 (Doney et al., 1996).
     !  growth, mort and grazing rates scaled by Tfunc where they are computed
     !-----------------------------------------------------------------------
