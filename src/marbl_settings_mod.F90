@@ -228,6 +228,9 @@ module marbl_settings_mod
 
   character(len=char_len), target :: init_bury_coeff_opt
 
+  integer(int_kind), target :: &
+       particulate_flux_ref_depth    ! reference depth for particulate flux diagnostics (m)
+
   real(r8), target :: &
        parm_NK_nut_restore_invtau_peryear,& ! restoring inverse timescale for NK nutrient tracers
        parm_Fe_bioavail,           & ! fraction of Fe flux that is bioavailable
@@ -349,6 +352,7 @@ contains
     lNK_shadow_tracers            = .false.         ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     lNK_ciso_shadow_tracers       = .false.         ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_NK_nut_restore_invtau_peryear = 10.0_r8         ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
+    particulate_flux_ref_depth    = 100             ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_Fe_bioavail              = 1.0_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_o2_min                   = 5.0_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
     parm_o2_min_delta             = 5.0_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE above
@@ -645,6 +649,15 @@ contains
     rptr      => parm_NK_nut_restore_invtau_peryear
     call this%add_var(sname, lname, units, datatype, category,       &
                         marbl_status_log, rptr=rptr)
+    call check_and_log_add_var_error(marbl_status_log, sname, subname, labort_marbl_loc)
+
+    sname     = 'particulate_flux_ref_depth'
+    lname     = 'reference depth for particulate flux diagnostics'
+    units     = 'm'
+    datatype  = 'integer'
+    iptr      => particulate_flux_ref_depth
+    call this%add_var(sname, lname, units, datatype, category,       &
+                        marbl_status_log, iptr=iptr)
     call check_and_log_add_var_error(marbl_status_log, sname, subname, labort_marbl_loc)
 
     sname     = 'parm_Fe_bioavail'
