@@ -1777,7 +1777,7 @@ contains
     ! Newton's method for POP_bury(coeff) - P_input = 0
 
     POP_bury_coeff = rmean_POP_bury_coeff &
-       - (rmean_POP_bury_avg - rmean_P_input_avg) / rmean_POP_bury_coeff
+       - (rmean_POP_bury_avg - rmean_P_input_avg) / rmean_POP_bury_deriv_avg
 
     ! Newton's method for bSi_bury(coeff) - Si_input = 0
 
@@ -2409,7 +2409,6 @@ contains
          surface_forcing_ind      = ind,                      &
          surface_input_forcings   = surface_input_forcings,   &
          surface_forcing_internal = surface_forcing_internal, &
-         surface_tracer_fluxes    = stf,                      &
          marbl_tracer_indices     = marbl_tracer_indices,     &
          saved_state              = saved_state,              &
          saved_state_ind          = saved_state_ind,          &
@@ -4305,7 +4304,7 @@ contains
     !  large detritus P
     !-----------------------------------------------------------------------
 
-    POP%prod(k) = Qp_zoo * sum(zoo_loss_poc(:)) + sum(remaining_P_pop(:))
+    POP%prod(k) = Qp_zoo * (sum(zoo_loss_poc(:)) + sum(zoo_graze_poc(:))) + sum(remaining_P_pop(:))
 
     if (POC%prod(k) <= c0) POP%prod(k) = c0
 
@@ -4314,22 +4313,25 @@ contains
     !  33% of CaCO3 is remin when phyto are grazed
     !-----------------------------------------------------------------------
 
+    P_CaCO3%prod(k) = c0
     do auto_ind = 1, auto_cnt
        if (marbl_tracer_indices%auto_inds(auto_ind)%CaCO3_ind > 0) then
-          P_CaCO3%prod(k) = ((c1 - f_graze_CaCO3_remin) * auto_graze(auto_ind) + &
-               auto_loss(auto_ind) + auto_agg(auto_ind)) * QCaCO3(auto_ind)
-          P_CaCO3_ALT_CO2%prod(k) = P_CaCO3%prod(k)
+          P_CaCO3%prod(k) = P_CaCO3%prod(k) + ((c1 - f_graze_CaCO3_remin) * auto_graze(auto_ind) &
+               + auto_loss(auto_ind) + auto_agg(auto_ind)) * QCaCO3(auto_ind)
        endif
     end do
+    P_CaCO3_ALT_CO2%prod(k) = P_CaCO3%prod(k)
 
     !-----------------------------------------------------------------------
     !  large detritus SiO2
     !  grazed diatom SiO2, 60% is remineralized
     !-----------------------------------------------------------------------
 
+    P_SiO2%prod(k) = c0
     do auto_ind = 1, auto_cnt
        if (marbl_tracer_indices%auto_inds(auto_ind)%Si_ind > 0) then
-          P_SiO2%prod(k) = Qsi(auto_ind) * ((c1 - f_graze_si_remin) * auto_graze(auto_ind) + auto_agg(auto_ind) &
+          P_SiO2%prod(k) = P_SiO2%prod(k) + Qsi(auto_ind) &
+               * ((c1 - f_graze_si_remin) * auto_graze(auto_ind) + auto_agg(auto_ind) &
                + autotrophs(auto_ind)%loss_poc * auto_loss(auto_ind))
        endif
     end do

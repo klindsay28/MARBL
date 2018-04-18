@@ -299,7 +299,6 @@ module marbl_diagnostics_mod
      integer(int_kind) :: PV_O2
      integer(int_kind) :: SCHMIDT_O2
      integer(int_kind) :: O2SAT
-     integer(int_kind) :: O2_GAS_FLUX
      integer(int_kind) :: CO2STAR
      integer(int_kind) :: DCO2STAR
      integer(int_kind) :: pCO2SURF
@@ -363,6 +362,7 @@ contains
 
     use marbl_settings_mod, only : lNK_shadow_tracers
     use marbl_settings_mod, only : ciso_on
+    use marbl_settings_mod, only : lvariable_PtoC
 
     type(marbl_domain_type)           , intent(in)    :: marbl_domain
     type(marbl_tracer_metadata_type)  , intent(in)    :: marbl_tracer_metadata(:) ! descriptors for each tracer
@@ -466,18 +466,6 @@ contains
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
            ind%O2SAT, marbl_status_log)
-      if (marbl_status_log%labort_marbl) then
-        call log_add_diagnostics_error(marbl_status_log, sname, subname)
-        return
-      end if
-
-      lname    = 'Dissolved Oxygen Surface Flux'
-      sname    = 'STF_O2'
-      units    = 'mmol/m^3 cm/s'
-      vgrid    = 'none'
-      truncate = .false.
-      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
-           ind%O2_GAS_FLUX, marbl_status_log)
       if (marbl_status_log%labort_marbl) then
         call log_add_diagnostics_error(marbl_status_log, sname, subname)
         return
@@ -2147,17 +2135,21 @@ contains
         allocate(ind%CaCO3_form(autotroph_cnt))
         allocate(ind%Nfix(autotroph_cnt))
       end if
-      do n= 1,autotroph_cnt
-        lname = trim(autotrophs(n)%lname) // ' P:C ratio'
-        sname = trim(autotrophs(n)%sname) // '_Qp'
-        units = 'none'
-        vgrid = 'layer_avg'
-        truncate = .true.
-        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%Qp(n), marbl_status_log)
-        if (marbl_status_log%labort_marbl) then
-          call log_add_diagnostics_error(marbl_status_log, sname, subname)
-          return
+      do n=1,autotroph_cnt
+        if (lvariable_PtoC) then
+          lname = trim(autotrophs(n)%lname) // ' P:C ratio'
+          sname = trim(autotrophs(n)%sname) // '_Qp'
+          units = 'none'
+          vgrid = 'layer_avg'
+          truncate = .true.
+          call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+               ind%Qp(n), marbl_status_log)
+          if (marbl_status_log%labort_marbl) then
+            call log_add_diagnostics_error(marbl_status_log, sname, subname)
+            return
+          end if
+        else
+          ind%Qp(n) = -1
         end if
 
         lname = trim(autotrophs(n)%lname) // ' N Limitation'
@@ -3550,7 +3542,6 @@ contains
        surface_forcing_ind,                         &
        surface_input_forcings,                      &
        surface_forcing_internal,                    &
-       surface_tracer_fluxes,                       &
        marbl_tracer_indices,                        &
        saved_state,                                 &
        saved_state_ind,                             &
@@ -3570,7 +3561,6 @@ contains
 
     type(marbl_surface_forcing_indexing_type) , intent(in)    :: surface_forcing_ind
     type(marbl_forcing_fields_type)           , intent(in)    :: surface_input_forcings(:)
-    real(r8)                                  , intent(in)    :: surface_tracer_fluxes(:,:)
     type(marbl_tracer_index_type)             , intent(in)    :: marbl_tracer_indices
     type(marbl_saved_state_type)              , intent(in)    :: saved_state
     type(marbl_surface_saved_state_indexing_type), intent(in) :: saved_state_ind
@@ -3624,8 +3614,6 @@ contains
 
          ph_prev           => saved_state%state(saved_state_ind%ph_surf)%field_2d,              &
          ph_prev_alt_co2   => saved_state%state(saved_state_ind%ph_alt_co2_surf)%field_2d,      &
-
-         stf               => surface_tracer_fluxes(:,:),                                       &
 
          po4_ind           => marbl_tracer_indices%po4_ind,                                     &
          no3_ind           => marbl_tracer_indices%no3_ind,                                     &
@@ -3716,8 +3704,6 @@ contains
     endif
 
     diags(ind_diag%NHx_SURFACE_EMIS)%field_2d(:) = nhx_surface_emis(:)
-
-    diags(ind_diag%O2_GAS_FLUX)%field_2d(:)   = stf(:, o2_ind)
 
     ! FIXME #63 : reported units of DUST_FLUX are g/cm^2/s, so this comment doesn't make sense
     ! multiply DUST flux by mpercm (.01) to convert from model units (cm/s)(mmol/m^3) to mmol/s/m^2
@@ -3887,7 +3873,9 @@ contains
     diags(ind%tot_Nfix)%field_3d(:, 1) = c0
     diags(ind%tot_CaCO3_form)%field_3d(:, 1) = c0
     do n = 1, autotroph_cnt
-       diags(ind%Qp(n))%field_3d(:, 1)          = autotroph_secondary_species(n,:)%Qp
+       if (ind%Qp(n).ne.-1) then
+         diags(ind%Qp(n))%field_3d(:, 1)          = autotroph_secondary_species(n,:)%Qp
+       end if
 
        diags(ind%N_lim(n))%field_3d(:, 1)       = autotroph_secondary_species(n,:)%VNtot
        diags(ind%Fe_lim(n))%field_3d(:, 1)      = autotroph_secondary_species(n,:)%VFe
