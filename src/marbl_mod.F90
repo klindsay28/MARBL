@@ -140,7 +140,6 @@ module marbl_mod
   use marbl_settings_mod, only : grazing
   use marbl_settings_mod, only : caco3_bury_thres_iopt
   use marbl_settings_mod, only : caco3_bury_thres_iopt_fixed_depth
-  use marbl_settings_mod, only : caco3_bury_thres_iopt_omega_calc
   use marbl_settings_mod, only : caco3_bury_thres_depth
   use marbl_settings_mod, only : PON_bury_coeff
 
@@ -2787,7 +2786,11 @@ contains
     ! ignore provided shortwave where col_frac == 0
     !-----------------------------------------------------------------------
 
-    PAR%col_frac(:) = interior_forcings(interior_forcing_ind%PAR_col_frac_id)%field_1d(1,:)
+    if (interior_forcing_ind%PAR_col_frac_id .ne. 0) then
+      PAR%col_frac(:) = interior_forcings(interior_forcing_ind%PAR_col_frac_id)%field_1d(1,:)
+    else
+      PAR%col_frac(:) = c1
+    end if
 
     where (PAR%col_frac(:) > c0)
        PAR%interface(0,:) = f_qsw_par *                                       &
@@ -4930,6 +4933,7 @@ contains
     marbl_interior_share%CO3_fields   = carbonate%CO3
     marbl_interior_share%HCO3_fields  = carbonate%HCO3
     marbl_interior_share%H2CO3_fields = carbonate%H2CO3
+    marbl_interior_share%CO3_sat_calcite = carbonate%CO3_sat_calcite
 
     marbl_interior_share%DOC_remin_fields = dissolved_organic_matter%DOC_remin
 
