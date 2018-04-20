@@ -476,6 +476,16 @@
       "units": "permil",
       "vertical_grid": "layer_avg"
    },
+   "CISO_DO13Ctot_SHADOW_remin": {
+      "dependencies": {
+         "lNK_ciso_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "DO13Ctot_SHADOW Remineralization",
+      "operator": "average",
+      "units": "mmol/m^3/s",
+      "vertical_grid": "layer_avg"
+   },
    "CISO_DO13Ctot_prod": {
       "dependencies": {
          "ciso_on": ".true."
@@ -492,6 +502,16 @@
       },
       "frequency": "medium",
       "longname": "DO13Ctot Remineralization",
+      "operator": "average",
+      "units": "mmol/m^3/s",
+      "vertical_grid": "layer_avg"
+   },
+   "CISO_DO14Ctot_SHADOW_remin": {
+      "dependencies": {
+         "lNK_ciso_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "DO14Ctot_SHADOW Remineralization",
       "operator": "average",
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
@@ -1093,6 +1113,16 @@
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
    },
+   "DOC_SHADOW_remin": {
+      "dependencies": {
+         "lNK_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "DOC_SHADOW Remineralization",
+      "operator": "average",
+      "units": "mmol/m^3/s",
+      "vertical_grid": "layer_avg"
+   },
    "DOC_prod": {
       "frequency": "medium",
       "longname": "DOC Production",
@@ -1135,6 +1165,16 @@
       "units": "mmol/m^3 cm/s",
       "vertical_grid": "none"
    },
+   "DOCr_SHADOW_remin": {
+      "dependencies": {
+         "lNK_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "DOCr_SHADOW Remineralization",
+      "operator": "average",
+      "units": "mmol/m^3/s",
+      "vertical_grid": "layer_avg"
+   },
    "DOCr_remin": {
       "frequency": "low",
       "longname": "DOCr Remineralization",
@@ -1156,6 +1196,16 @@
       "units": "mmol/m^3 cm/s",
       "vertical_grid": "none"
    },
+   "DON_SHADOW_remin": {
+      "dependencies": {
+         "lNK_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "DON_SHADOW Remineralization",
+      "operator": "average",
+      "units": "mmol/m^3/s",
+      "vertical_grid": "layer_avg"
+   },
    "DON_prod": {
       "frequency": "medium",
       "longname": "DON Production",
@@ -1166,6 +1216,16 @@
    "DON_remin": {
       "frequency": "low",
       "longname": "DON Remineralization",
+      "operator": "average",
+      "units": "mmol/m^3/s",
+      "vertical_grid": "layer_avg"
+   },
+   "DONr_SHADOW_remin": {
+      "dependencies": {
+         "lNK_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "DONr_SHADOW Remineralization",
       "operator": "average",
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
@@ -1185,6 +1245,16 @@
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
    },
+   "DOP_SHADOW_remin": {
+      "dependencies": {
+         "lNK_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "DOP_SHADOW Remineralization",
+      "operator": "average",
+      "units": "mmol/m^3/s",
+      "vertical_grid": "layer_avg"
+   },
    "DOP_prod": {
       "frequency": "medium",
       "longname": "DOP Production",
@@ -1195,6 +1265,16 @@
    "DOP_remin": {
       "frequency": "low",
       "longname": "DOP Remineralization",
+      "operator": "average",
+      "units": "mmol/m^3/s",
+      "vertical_grid": "layer_avg"
+   },
+   "DOPr_SHADOW_remin": {
+      "dependencies": {
+         "lNK_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "DOPr_SHADOW Remineralization",
       "operator": "average",
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
@@ -1290,6 +1370,16 @@
          "average",
          "average"
       ],
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
+   },
+   "FG_CO2_SHADOW": {
+      "dependencies": {
+         "lNK_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "DIC Shadow Surface Gas Flux",
+      "operator": "average",
       "units": "mmol/m^3 cm/s",
       "vertical_grid": "none"
    },
@@ -1803,6 +1893,46 @@
       "operator": "average",
       "units": "mmol/m^3",
       "vertical_grid": "layer_avg"
+   },
+   "d_SF_DI13C_SHADOW_d_DI13C_SHADOW": {
+      "dependencies": {
+         "lNK_ciso_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "deriv of flux of 13CO2_SHADOW wrt DI13C_SHADOW",
+      "operator": "average",
+      "units": "cm/s",
+      "vertical_grid": "none"
+   },
+   "d_SF_DI14C_SHADOW_d_DI14C_SHADOW": {
+      "dependencies": {
+         "lNK_ciso_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "deriv of flux of 14CO2_SHADOW wrt DI14C_SHADOW",
+      "operator": "average",
+      "units": "cm/s",
+      "vertical_grid": "none"
+   },
+   "d_SF_DIC_SHADOW_d_ALK_SHADOW": {
+      "dependencies": {
+         "lNK_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "d_SF_DIC_SHADOW_d_ALK_SHADOW",
+      "operator": "average",
+      "units": "cm/s",
+      "vertical_grid": "none"
+   },
+   "d_SF_DIC_SHADOW_d_DIC_SHADOW": {
+      "dependencies": {
+         "lNK_shadow_tracers": ".true."
+      },
+      "frequency": "low",
+      "longname": "d_SF_DIC_SHADOW_d_DIC_SHADOW",
+      "operator": "average",
+      "units": "cm/s",
+      "vertical_grid": "none"
    },
    "dustToSed": {
       "frequency": "medium",

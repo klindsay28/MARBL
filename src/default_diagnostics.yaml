@@ -1930,3 +1930,119 @@ x_graze_((zooplankton_sname)) :
    truncate : true
    frequency : never
    operator : average
+
+##########################
+# lNK_shadow Diagnostics #
+##########################
+
+FG_CO2_SHADOW :
+   dependencies :
+      lNK_shadow_tracers : .true.
+   longname : DIC Shadow Surface Gas Flux
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : low
+   operator : average
+d_SF_DIC_SHADOW_d_DIC_SHADOW :
+   dependencies :
+      lNK_shadow_tracers : .true.
+   longname : d_SF_DIC_SHADOW_d_DIC_SHADOW
+   units : cm/s
+   vertical_grid : none
+   frequency : low
+   operator : average
+d_SF_DIC_SHADOW_d_ALK_SHADOW :
+   dependencies :
+      lNK_shadow_tracers : .true.
+   longname : d_SF_DIC_SHADOW_d_ALK_SHADOW
+   units : cm/s
+   vertical_grid : none
+   frequency : low
+   operator : average
+
+DOC_SHADOW_remin :
+   dependencies :
+      lNK_shadow_tracers : .true.
+   longname : DOC_SHADOW Remineralization
+   units : mmol/m^3/s
+   vertical_grid : layer_avg
+   frequency : low
+   operator : average
+DOCr_SHADOW_remin :
+   dependencies :
+      lNK_shadow_tracers : .true.
+   longname : DOCr_SHADOW Remineralization
+   units : mmol/m^3/s
+   vertical_grid : layer_avg
+   frequency : low
+   operator : average
+DON_SHADOW_remin :
+   dependencies :
+      lNK_shadow_tracers : .true.
+   longname : DON_SHADOW Remineralization
+   units : mmol/m^3/s
+   vertical_grid : layer_avg
+   frequency : low
+   operator : average
+DONr_SHADOW_remin :
+   dependencies :
+      lNK_shadow_tracers : .true.
+   longname : DONr_SHADOW Remineralization
+   units : mmol/m^3/s
+   vertical_grid : layer_avg
+   frequency : low
+   operator : average
+DOP_SHADOW_remin :
+   dependencies :
+      lNK_shadow_tracers : .true.
+   longname : DOP_SHADOW Remineralization
+   units : mmol/m^3/s
+   vertical_grid : layer_avg
+   frequency : low
+   operator : average
+DOPr_SHADOW_remin :
+   dependencies :
+      lNK_shadow_tracers : .true.
+   longname : DOPr_SHADOW Remineralization
+   units : mmol/m^3/s
+   vertical_grid : layer_avg
+   frequency : low
+   operator : average
+
+###############################
+# lNK_ciso_shadow Diagnostics #
+###############################
+
+d_SF_DI13C_SHADOW_d_DI13C_SHADOW :
+   dependencies :
+      lNK_ciso_shadow_tracers : .true.
+   longname : deriv of flux of 13CO2_SHADOW wrt DI13C_SHADOW
+   units : cm/s
+   vertical_grid : none
+   frequency : low
+   operator : average
+d_SF_DI14C_SHADOW_d_DI14C_SHADOW :
+   dependencies :
+      lNK_ciso_shadow_tracers : .true.
+   longname : deriv of flux of 14CO2_SHADOW wrt DI14C_SHADOW
+   units : cm/s
+   vertical_grid : none
+   frequency : low
+   operator : average
+
+CISO_DO13Ctot_SHADOW_remin :
+   dependencies :
+      lNK_ciso_shadow_tracers : .true.
+   longname : DO13Ctot_SHADOW Remineralization
+   units : mmol/m^3/s
+   vertical_grid : layer_avg
+   frequency : low
+   operator : average
+CISO_DO14Ctot_SHADOW_remin :
+   dependencies :
+      lNK_ciso_shadow_tracers : .true.
+   longname : DO14Ctot_SHADOW Remineralization
+   units : mmol/m^3/s
+   vertical_grid : layer_avg
+   frequency : low
+   operator : average

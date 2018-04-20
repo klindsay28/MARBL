@@ -279,7 +279,7 @@ module marbl_diagnostics_mod
     integer(int_kind), allocatable :: zoo_graze_zoo(:)
     integer(int_kind), allocatable :: x_graze_zoo(:)
 
-    ! ciso ids for nonstandard 3d fields
+    ! ids for lNK_shadow 3d fields
     integer(int_kind) :: DOC_SHADOW_remin
     integer(int_kind) :: DOCr_SHADOW_remin
     integer(int_kind) :: DON_SHADOW_remin
@@ -423,6 +423,7 @@ contains
 
     use marbl_settings_mod, only : lNK_shadow_tracers
     use marbl_settings_mod, only : ciso_on
+    use marbl_settings_mod, only : lNK_ciso_shadow_tracers
     use marbl_settings_mod, only : lvariable_PtoC
     use marbl_settings_mod, only : particulate_flux_ref_depth
 
@@ -1025,8 +1026,10 @@ contains
           call log_add_diagnostics_error(marbl_status_log, sname, subname)
           return
         end if
+      end if ! ciso_on
 
-        lname    = 'deriv of flux of 13CO2_SHADOW wrt DI14C_SHADOW'
+      if (lNK_ciso_shadow_tracers) then
+        lname    = 'deriv of flux of 13CO2_SHADOW wrt DI13C_SHADOW'
         sname    = 'd_SF_DI13C_SHADOW_d_DI13C_SHADOW'
         units    = 'cm/s'
         vgrid    = 'none'
@@ -1049,7 +1052,7 @@ contains
           call log_add_diagnostics_error(marbl_status_log, sname, subname)
           return
         end if
-      end if ! ciso_on
+      end if ! lNK_ciso_shadow_tracers
 
     end associate
 
@@ -3796,30 +3799,6 @@ contains
           return
         end if
 
-        lname    = 'DO13Ctot_SHADOW Remineralization'
-        sname    = 'CISO_DO13Ctot_SHADOW_remin'
-        units    = 'mmol/m^3/s'
-        vgrid    = 'layer_avg'
-        truncate = .false.
-        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%CISO_DO13Ctot_SHADOW_remin, marbl_status_log)
-        if (marbl_status_log%labort_marbl) then
-          call log_add_diagnostics_error(marbl_status_log, sname, subname)
-          return
-        end if
-
-        lname    = 'DO14Ctot_SHADOW Remineralization'
-        sname    = 'CISO_DO14Ctot_SHADOW_remin'
-        units    = 'mmol/m^3/s'
-        vgrid    = 'layer_avg'
-        truncate = .false.
-        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%CISO_DO14Ctot_SHADOW_remin, marbl_status_log)
-        if (marbl_status_log%labort_marbl) then
-          call log_add_diagnostics_error(marbl_status_log, sname, subname)
-          return
-        end if
-
         !  Nonstandard 2D fields
 
         lname    = 'Total 13C Fixation Vertical Integral'
@@ -4144,6 +4123,32 @@ contains
         end if
 
       end if  ! end of if ciso_on
+
+      if (lNK_ciso_shadow_tracers) then
+        lname    = 'DO13Ctot_SHADOW Remineralization'
+        sname    = 'CISO_DO13Ctot_SHADOW_remin'
+        units    = 'mmol/m^3/s'
+        vgrid    = 'layer_avg'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%CISO_DO13Ctot_SHADOW_remin, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname    = 'DO14Ctot_SHADOW Remineralization'
+        sname    = 'CISO_DO14Ctot_SHADOW_remin'
+        units    = 'mmol/m^3/s'
+        vgrid    = 'layer_avg'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+             ind%CISO_DO14Ctot_SHADOW_remin, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call log_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+      end if  ! end of if lNK_ciso_shadow_tracers
 
        !-----------------------------------------------------------------
        ! Restoring diagnostics
