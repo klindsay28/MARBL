@@ -337,12 +337,12 @@ contains
          R14C_zooC            ! 14C/12C in total zooplankton
 
     real (r8), dimension (marbl_domain%km) :: &
-         R13C_DOC_SHADOW,   & ! 13C/12C in total DOC_SHADOW
-         R14C_DOC_SHADOW      ! 14C/12C in total DOC_SHADOW
+         R13C_DOCtot_SHADOW,& ! 13C/12C in total DOCtot_SHADOW
+         R14C_DOCtot_SHADOW   ! 14C/12C in total DOCtot_SHADOW
 
     real (r8), dimension(autotroph_cnt, marbl_domain%km) :: &
          Ca13CO3_PROD,        & ! prod. of 13C CaCO3 by small phyto (mmol CaCO3/m^3/sec)
-         Ca14CO3_PROD,        & ! prod. of 13C CaCO3 by small phyto (mmol CaCO3/m^3/sec)
+         Ca14CO3_PROD,        & ! prod. of 14C CaCO3 by small phyto (mmol CaCO3/m^3/sec)
          eps_autotroph,       & ! Permil fractionation (or discrimination factor) for Carbon autotroph types sp, diat, diaz
          mui_to_co2star,      & ! Carbon autotroph instanteous growth rate over [CO2*] (m^3 /mmol C /s)
          R13C_photoC,         & ! 13C/12C in Carbon autotroph C-fixation (mmol C/m^3/sec)
@@ -369,8 +369,8 @@ contains
          alpha_dic_g,       & ! eps = ( alpa -1 ) * 1000
          delta_C13_Corg,    & ! deltaC13 of Net Primary Production
          delta_C13_CO2STAR, & ! deltaC13 of CO2*
-         DO14Ctot_prod,     & ! production of 13C DOCtot (mmol C/m^3/sec)
-         DO14Ctot_remin,    & ! remineralization of 13C DOCtot (mmol C/m^3/sec)
+         DO14Ctot_prod,     & ! production of 14C DOCtot (mmol C/m^3/sec)
+         DO14Ctot_remin,    & ! remineralization of 14C DOCtot (mmol C/m^3/sec)
          alpha_aq_g_14c,    & ! alpha for 14C, with fractionation twice as large as for 13C
          alpha_dic_g_14c,   & ! alpha for 14C, with fractionation twice as large as for 13C
          delta_C14_Corg,    & ! deltaC14 of Net Primary Production
@@ -384,8 +384,8 @@ contains
          decay_14Ctot         ! 14C decay loss term
 
     real (r8), dimension(marbl_domain%km) :: &
-         DO13Ctot_SHADOW_remin,& ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
-         DO14Ctot_SHADOW_remin   ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
+         DO13Ctot_SHADOW_remin,& ! remineralization of 13C DOCtot_SHADOW (mmol C/m^3/sec)
+         DO14Ctot_SHADOW_remin   ! remineralization of 14C DOCtot_SHADOW (mmol C/m^3/sec)
 
     !-------------------------------------------------------------
 
@@ -517,11 +517,11 @@ contains
 
        if (lNK_ciso_shadow_tracers) then
           if (DOCtot_loc(k) > c0) then
-             R13C_DOC_SHADOW(k) = DO13Ctot_SHADOW_loc(k) / DOCtot_loc(k)
-             R14C_DOC_SHADOW(k) = DO14Ctot_SHADOW_loc(k) / DOCtot_loc(k)
+             R13C_DOCtot_SHADOW(k) = DO13Ctot_SHADOW_loc(k) / DOCtot_loc(k)
+             R14C_DOCtot_SHADOW(k) = DO14Ctot_SHADOW_loc(k) / DOCtot_loc(k)
           else
-             R13C_DOC_SHADOW(k) = c0
-             R14C_DOC_SHADOW(k) = c0
+             R13C_DOCtot_SHADOW(k) = c0
+             R14C_DOCtot_SHADOW(k) = c0
           end if
        end if
 
@@ -743,8 +743,8 @@ contains
        DO14Ctot_remin(k) = DOCtot_remin(k) * R14C_DOCtot(k)
 
        if (lNK_ciso_shadow_tracers) then
-          DO13Ctot_SHADOW_remin(k) = DOCtot_remin(k) * R13C_DOC_SHADOW(k)
-          DO14Ctot_SHADOW_remin(k) = DOCtot_remin(k) * R14C_DOC_SHADOW(k)
+          DO13Ctot_SHADOW_remin(k) = DOCtot_remin(k) * R13C_DOCtot_SHADOW(k)
+          DO14Ctot_SHADOW_remin(k) = DOCtot_remin(k) * R14C_DOCtot_SHADOW(k)
        end if
 
        !-----------------------------------------------------------------------
