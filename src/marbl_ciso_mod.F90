@@ -337,8 +337,8 @@ contains
          R14C_zooC            ! 14C/12C in total zooplankton
 
     real (r8), dimension (marbl_domain%km) :: &
-         R13C_DOCtot_SHADOW,& ! 13C/12C in total DOCtot_SHADOW
-         R14C_DOCtot_SHADOW   ! 14C/12C in total DOCtot_SHADOW
+         R13C_DOCtot_SHADOW,& ! 13C/12C of DO13Ctot_SHADOW to DOCtot
+         R14C_DOCtot_SHADOW   ! 14C/12C of DO14Ctot_SHADOW to DOCtot
 
     real (r8), dimension(autotroph_cnt, marbl_domain%km) :: &
          Ca13CO3_PROD,        & ! prod. of 13C CaCO3 by small phyto (mmol CaCO3/m^3/sec)

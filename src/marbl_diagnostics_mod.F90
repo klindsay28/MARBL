@@ -5670,8 +5670,8 @@ contains
          decay_14Ctot       ! 14C decay loss term
 
     real (r8), dimension(marbl_domain%km) :: &
-         DO13Ctot_SHADOW_remin,& ! remineralization of 13C DOC_SHADOW (mmol C/m^3/sec)
-         DO14Ctot_SHADOW_remin   ! remineralization of 14C DOC_SHADOW (mmol C/m^3/sec)
+         DO13Ctot_SHADOW_remin,& ! remineralization of 13C DOCtot_SHADOW (mmol C/m^3/sec)
+         DO14Ctot_SHADOW_remin   ! remineralization of 14C DOCtot_SHADOW (mmol C/m^3/sec)
 
     type(column_sinking_particle_type), intent(in) :: &
          PO13C,        &  ! base units = nmol 13C
