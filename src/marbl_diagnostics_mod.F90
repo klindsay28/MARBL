@@ -191,6 +191,7 @@ module marbl_diagnostics_mod
     integer(int_kind) :: DOP_prod
     integer(int_kind) :: DOP_remin
     integer(int_kind) :: DOPr_remin
+    integer(int_kind) :: DOP_loss_P_bal
     integer(int_kind) :: Fe_scavenge
     integer(int_kind) :: Fe_scavenge_rate
     integer(int_kind) :: Lig_prod
@@ -316,10 +317,10 @@ module marbl_diagnostics_mod
      integer (int_kind), allocatable :: CISO_photo14C(:)            ! 14C fixation
      integer (int_kind), allocatable :: CISO_photo13C_zint(:)       ! 13C fixation vertical integral
      integer (int_kind), allocatable :: CISO_photo14C_zint(:)       ! 14C fixation vertical integral
-     integer (int_kind), allocatable :: CISO_d13C(:)                ! if for d13C of autotroph carbon
-     integer (int_kind), allocatable :: CISO_d14C(:)                ! if for d14C of autotroph carbon
-     integer (int_kind), allocatable :: CISO_autotrophCaCO3_d14C(:) ! if for d14C of autotrophCaCO3
-     integer (int_kind), allocatable :: CISO_autotrophCaCO3_d13C(:) ! if for d13C of autotrophCaCO3
+     integer (int_kind), allocatable :: CISO_d13C(:)                ! d13C of autotroph carbon
+     integer (int_kind), allocatable :: CISO_d14C(:)                ! d14C of autotroph carbon
+     integer (int_kind), allocatable :: CISO_autotrophCaCO3_d14C(:) ! d14C of autotrophCaCO3
+     integer (int_kind), allocatable :: CISO_autotrophCaCO3_d13C(:) ! d13C of autotrophCaCO3
 
      integer (int_kind) :: CISO_eps_aq_g                                      ! eps_aq_g
      integer (int_kind) :: CISO_eps_dic_g                                     ! eps_dic_g
@@ -329,12 +330,12 @@ module marbl_diagnostics_mod
      integer (int_kind) :: CISO_DO14Ctot_remin                                ! do14ctot remineralization
      integer (int_kind) :: CISO_Jint_13Ctot                                   ! vertically integrated source sink term, 13Ctot
      integer (int_kind) :: CISO_Jint_14Ctot                                   ! vertically integrated source sink term, 14Ctot
-     integer (int_kind) :: CISO_zooC_d13C                                     ! if for d13C of zooC
-     integer (int_kind) :: CISO_zooC_d14C                                     ! if for d14C of zooC
-     integer (int_kind) :: CISO_DOCtot_d13C                                   ! if for d13C of DOCtot
-     integer (int_kind) :: CISO_DOCtot_d14C                                   ! if for d14C of DOCtot
-     integer (int_kind) :: CISO_DIC_d13C                                      ! if for d13C of DIC
-     integer (int_kind) :: CISO_DIC_d14C                                      ! if for d14C of DIC
+     integer (int_kind) :: CISO_zoototC_d13C                                  ! d13C of total zooC
+     integer (int_kind) :: CISO_zoototC_d14C                                  ! d14C of total zooC
+     integer (int_kind) :: CISO_DOCtot_d13C                                   ! d13C of DOCtot
+     integer (int_kind) :: CISO_DOCtot_d14C                                   ! d14C of DOCtot
+     integer (int_kind) :: CISO_DIC_d13C                                      ! d13C of DIC
+     integer (int_kind) :: CISO_DIC_d14C                                      ! d14C of DIC
      integer (int_kind) :: calcToSed_13C                                      ! calcite flux sedimentary burial
      integer (int_kind) :: calcToSed_14C                                      ! calcite flux sedimentary burial
      integer (int_kind) :: pocToSed_13C                                       ! poc burial flux to sediments
@@ -2434,6 +2435,18 @@ contains
         return
       end if
 
+      lname = 'DOP loss, due to P budget balancing'
+      sname = 'DOP_loss_P_bal'
+      units = 'mmol/m^3/s'
+      vgrid = 'layer_avg'
+      truncate = .false.
+      call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+           ind%DOP_loss_P_bal, marbl_status_log)
+      if (marbl_status_log%labort_marbl) then
+        call log_add_diagnostics_error(marbl_status_log, sname, subname)
+        return
+      end if
+
       lname = 'Iron Scavenging'
       sname = 'Fe_scavenge'
       units = 'mmol/m^3/s'
@@ -3643,13 +3656,13 @@ contains
           return
         end if
 
-        lname    = 'd13C of zooC'
-        sname    = 'CISO_zooC_d13C'
+        lname    = 'd13C of total zooC'
+        sname    = 'CISO_zoototC_d13C'
         units    = 'permil'
         vgrid    = 'layer_avg'
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%CISO_zooC_d13C, marbl_status_log)
+             ind%CISO_zoototC_d13C, marbl_status_log)
         if (marbl_status_log%labort_marbl) then
           call log_add_diagnostics_error(marbl_status_log, sname, subname)
           return
@@ -3787,13 +3800,13 @@ contains
           return
         end if
 
-        lname    = 'd14C of zooC'
-        sname    = 'CISO_zooC_d14C'
+        lname    = 'd14C of total zooC'
+        sname    = 'CISO_zoototC_d14C'
         units    = 'permil'
         vgrid    = 'layer_avg'
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
-             ind%CISO_zooC_d14C, marbl_status_log)
+             ind%CISO_zoototC_d14C, marbl_status_log)
         if (marbl_status_log%labort_marbl) then
           call log_add_diagnostics_error(marbl_status_log, sname, subname)
           return
@@ -5167,6 +5180,7 @@ contains
        diags(ind%DOP_prod)%field_3d(k, 1)         = dissolved_organic_matter(k)%DOP_prod
        diags(ind%DOP_remin)%field_3d(k, 1)        = dissolved_organic_matter(k)%DOP_remin
        diags(ind%DOPr_remin)%field_3d(k, 1)       = dissolved_organic_matter(k)%DOPr_remin
+       diags(ind%DOP_loss_P_bal)%field_3d(k, 1)   = dissolved_organic_matter(k)%DOP_loss_P_bal
     end do
 
     if (lNK_shadow_tracers) then
@@ -5611,8 +5625,8 @@ contains
        DIC_d14C,            &
        DOCtot_d13C,         &
        DOCtot_d14C,         &
-       zooC_d13C,           &
-       zooC_d14C,           &
+       zoototC_d13C,        &
+       zoototC_d14C,        &
        DO13Ctot_prod,       &
        DO14Ctot_prod,       &
        DO13Ctot_remin,      &
@@ -5659,8 +5673,8 @@ contains
          DIC_d14C       , & ! d14C of DIC
          DOCtot_d13C    , & ! d13C of DOCtot
          DOCtot_d14C    , & ! d14C of DOCtot
-         zooC_d13C      , & ! d13C of zooC
-         zooC_d14C      , & ! d14C of zooC
+         zoototC_d13C   , & ! d13C of total zooC
+         zoototC_d14C   , & ! d14C of total zooC
          DO13Ctot_prod  , & ! production of 13C DOCtot (mmol C/m^3/sec)
          DO14Ctot_prod  , & ! production of 14C DOCtot (mmol C/m^3/sec)
          DO13Ctot_remin , & ! remineralization of 13C DOCtot (mmol C/m^3/sec)
@@ -5707,10 +5721,10 @@ contains
          ind     => marbl_interior_diag_ind, &
          di13c_ind     => marbl_tracer_indices%di13c_ind,    &
          do13ctot_ind  => marbl_tracer_indices%do13ctot_ind, &
-         zoo13Ctot_ind    => marbl_tracer_indices%zoo13Ctot_ind,   &
+         zootot13C_ind    => marbl_tracer_indices%zootot13C_ind,   &
          di14c_ind     => marbl_tracer_indices%di14c_ind,    &
          do14ctot_ind  => marbl_tracer_indices%do14ctot_ind, &
-         zoo14Ctot_ind    => marbl_tracer_indices%zoo14Ctot_ind    &
+         zootot14C_ind    => marbl_tracer_indices%zootot14C_ind    &
          )
 
     diags(ind%calcToSed_13C)%field_2d(1) = sum(P_Ca13CO3%sed_loss)
@@ -5727,7 +5741,7 @@ contains
 
     ! Vertical integrals - CISO_Jint_13Ctot
 
-    work(:) = dtracers(di13c_ind,:) + dtracers(do13ctot_ind,:) + dtracers(zoo13Ctot_ind,:) &
+    work(:) = dtracers(di13c_ind,:) + dtracers(do13ctot_ind,:) + dtracers(zootot13C_ind,:) &
          + sum(dtracers(marbl_tracer_indices%auto_inds(:)%C13_ind,:), dim=1)
     do auto_ind = 1, autotroph_cnt
        n = marbl_tracer_indices%auto_inds(auto_ind)%Ca13CO3_ind
@@ -5749,7 +5763,7 @@ contains
 
     ! Vertical integral - CISO_Jint_14Ctot
 
-    work(:) = dtracers(di14c_ind,:) + dtracers(do14ctot_ind,:) + dtracers(zoo14Ctot_ind,:) &
+    work(:) = dtracers(di14c_ind,:) + dtracers(do14ctot_ind,:) + dtracers(zootot14C_ind,:) &
          + sum(dtracers(marbl_tracer_indices%auto_inds(:)%C14_ind,:), dim=1) + decay_14Ctot
     do auto_ind = 1, autotroph_cnt
        n = marbl_tracer_indices%auto_inds(auto_ind)%Ca14CO3_ind
@@ -5824,8 +5838,8 @@ contains
        diags(ind%CISO_DO13Ctot_remin)%field_3d(k, 1)  = DO13Ctot_remin(k)
        diags(ind%CISO_DO14Ctot_remin)%field_3d(k, 1)  = DO14Ctot_remin(k)
 
-       diags(ind%CISO_zooC_d13C)%field_3d(k, 1)       = zooC_d13C(k)
-       diags(ind%CISO_zooC_d14C)%field_3d(k, 1)       = zooC_d14C(k)
+       diags(ind%CISO_zoototC_d13C)%field_3d(k, 1)    = zoototC_d13C(k)
+       diags(ind%CISO_zoototC_d14C)%field_3d(k, 1)    = zoototC_d14C(k)
 
        diags(ind%CISO_eps_aq_g)%field_3d(k, 1)        = eps_aq_g(k)
        diags(ind%CISO_eps_dic_g)%field_3d(k, 1)       = eps_dic_g(k)

@@ -88,14 +88,11 @@ module marbl_interface_private_types
 
   type, public :: marbl_interior_share_type
      real(r8) :: QA_dust_def         ! incoming deficit in the QA(dust) POC flux
-     real(r8) :: DIC_loc_fields      ! local copy of model DIC
-     real(r8) :: DOCtot_loc_fields   ! local copy of model DOC+DOCr
-     real(r8) :: O2_loc_fields       ! local copy of model O2
-     real(r8) :: NO3_loc_fields      ! local copy of model NO3
      real(r8) :: CO3_fields
      real(r8) :: HCO3_fields         ! bicarbonate ion
      real(r8) :: H2CO3_fields        ! carbonic acid
      real(r8) :: CO3_sat_calcite
+     real(r8) :: DOCtot_loc_fields   ! local copy of model DOC+DOCr
      real(r8) :: DOCtot_remin_fields ! remineralization of DOC+DOCr (mmol C/m^3/sec)
   end type marbl_interior_share_type
 
@@ -153,6 +150,7 @@ module marbl_interface_private_types
      real (r8) :: DOP_prod         ! production of DOP
      real (r8) :: DOP_remin        ! remineralization of DOP
      real (r8) :: DOPr_remin       ! remineralization of DOPr
+     real (r8) :: DOP_loss_P_bal   ! DOP loss, due to P budget balancing
   end type dissolved_organic_matter_type
 
   !***********************************************************************
@@ -253,8 +251,8 @@ module marbl_interface_private_types
     ! For CISO, don't want individual C13 and C14 tracers for each zooplankton
     ! Instead we collect them into one tracer for each isotope, regardless of
     ! zooplankton_cnt
-    integer (int_kind) :: zoo13Ctot_ind   = 0 ! zooplankton carbon 13
-    integer (int_kind) :: zoo14Ctot_ind   = 0 ! zooplankton carbon 14
+    integer (int_kind) :: zootot13C_ind   = 0 ! total zooplankton carbon 13
+    integer (int_kind) :: zootot14C_ind   = 0 ! total zooplankton carbon 14
 
   contains
     procedure, public :: add_tracer_index
@@ -674,8 +672,8 @@ contains
       call this%add_tracer_index('do13ctot', 'ciso', this%do13ctot_ind, marbl_status_log)
       call this%add_tracer_index('di14c',    'ciso', this%di14c_ind,    marbl_status_log)
       call this%add_tracer_index('do14ctot', 'ciso', this%do14ctot_ind, marbl_status_log)
-      call this%add_tracer_index('zoo13Ctot',   'ciso', this%zoo13Ctot_ind,   marbl_status_log)
-      call this%add_tracer_index('zoo14Ctot',   'ciso', this%zoo14Ctot_ind,   marbl_status_log)
+      call this%add_tracer_index('zootot13C',   'ciso', this%zootot13C_ind,   marbl_status_log)
+      call this%add_tracer_index('zootot14C',   'ciso', this%zootot14C_ind,   marbl_status_log)
 
       if (lNK_ciso_shadow_tracers) then
         call this%add_tracer_index('di13c_shadow',    'ciso', this%di13c_shadow_ind,    marbl_status_log)
