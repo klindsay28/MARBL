@@ -45,6 +45,19 @@ module marbl_pft_mod
     procedure, public :: set_to_default => autotroph_set_to_default
   end type autotroph_type
 
+  type, public :: autotroph_local_type
+     real (r8) :: Chl   ! local copy of model autotroph Chl
+     real (r8) :: C     ! local copy of model autotroph C
+     real (r8) :: P     ! local copy of model autotroph P
+     real (r8) :: Fe    ! local copy of model autotroph Fe
+     real (r8) :: Si    ! local copy of model autotroph Si
+     real (r8) :: CaCO3 ! local copy of model autotroph CaCO3
+     real (r8) :: C13     ! local copy of model autotroph C13
+     real (r8) :: C14     ! local copy of model autotroph C14
+     real (r8) :: Ca13CO3 ! local copy of model autotroph Ca13CO3
+     real (r8) :: Ca14CO3 ! local copy of model autotroph Ca14CO3
+  end type autotroph_local_type
+
   !****************************************************************************
   ! derived types for zooplankton
 
@@ -85,36 +98,17 @@ module marbl_pft_mod
 
   !***********************************************************************
 
-  type, public :: marbl_autotroph_share_type
-     real(r8) :: autotrophChl_loc_fields   ! local copy of model autotroph Chl
-     real(r8) :: autotrophC_loc_fields     ! local copy of model autotroph C
-     real(r8) :: autotrophFe_loc_fields    ! local copy of model autotroph Fe
-     real(r8) :: autotrophSi_loc_fields    ! local copy of model autotroph Si
-     real(r8) :: autotrophCaCO3_loc_fields ! local copy of model autotroph CaCO3
-     real(r8) :: QCaCO3_fields             ! small phyto CaCO3/C ratio (mmol CaCO3/mmol C)
-     real(r8) :: auto_graze_fields         ! autotroph grazing rate (mmol C/m^3/sec)
-     real(r8) :: auto_graze_zoo_fields     ! auto_graze routed to zoo (mmol C/m^3/sec)
-     real(r8) :: auto_graze_poc_fields     ! auto_graze routed to poc (mmol C/m^3/sec)
-     real(r8) :: auto_graze_doc_fields     ! auto_graze routed to doc (mmol C/m^3/sec)
-     real(r8) :: auto_graze_dic_fields     ! auto_graze routed to dic (mmol C/m^3/sec)
-     real(r8) :: auto_loss_fields          ! autotroph non-grazing mort (mmol C/m^3/sec)
-     real(r8) :: auto_loss_poc_fields      ! auto_loss routed to poc (mmol C/m^3/sec)
-     real(r8) :: auto_loss_doc_fields      ! auto_loss routed to doc (mmol C/m^3/sec)
-     real(r8) :: auto_loss_dic_fields      ! auto_loss routed to dic (mmol C/m^3/sec)
-     real(r8) :: auto_agg_fields           ! autotroph aggregation (mmol C/m^3/sec)
-     real(r8) :: photoC_fields             ! C-fixation (mmol C/m^3/sec)
-     real(r8) :: CaCO3_form_fields         ! calcification of CaCO3 by small phyto (mmol CaCO3/m^3/sec)
-     real(r8) :: PCphoto_fields            ! C-specific rate of photosynth. (1/sec)
-  end type marbl_autotroph_share_type
-
-  !***********************************************************************
-
   type, public :: marbl_zooplankton_share_type
-     real(r8) :: zooC_loc_fields     ! local copy of model zooC
-     real(r8) :: zoo_loss_fields     ! mortality & higher trophic grazing on zooplankton (mmol C/m^3/sec)
-     real(r8) :: zoo_loss_poc_fields ! zoo_loss routed to large detrital (mmol C/m^3/sec)
-     real(r8) :: zoo_loss_doc_fields ! zoo_loss routed to doc (mmol C/m^3/sec)
-     real(r8) :: zoo_loss_dic_fields ! zoo_loss routed to dic (mmol C/m^3/sec)
+     real(r8) :: zoototC_loc_fields      ! local copy of model zooC
+     real(r8) :: zootot_loss_fields      ! mortality & higher trophic grazing on zooplankton (mmol C/m^3/sec)
+     real(r8) :: zootot_loss_poc_fields  ! zoo_loss routed to large detrital (mmol C/m^3/sec)
+     real(r8) :: zootot_loss_doc_fields  ! zoo_loss routed to doc (mmol C/m^3/sec)
+     real(r8) :: zootot_loss_dic_fields  ! zoo_loss routed to dic (mmol C/m^3/sec)
+     real(r8) :: zootot_graze_fields     ! zooplankton losses due to grazing (mmol C/m^3/sec)
+     real(r8) :: zootot_graze_zoo_fields ! grazing of zooplankton routed to zoo (mmol C/m^3/sec)
+     real(r8) :: zootot_graze_poc_fields ! grazing of zooplankton routed to poc (mmol C/m^3/sec)
+     real(r8) :: zootot_graze_doc_fields ! grazing of zooplankton routed to doc (mmol C/m^3/sec)
+     real(r8) :: zootot_graze_dic_fields ! grazing of zooplankton routed to dic (mmol C/m^3/sec)
   end type marbl_zooplankton_share_type
 
   !*****************************************************************************
@@ -214,14 +208,14 @@ contains
         self%exp_calcifier = .false.
         self%silicifier = .false.
         self%kFe             = 0.03e-3_r8        ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
-        self%kPO4            = 0.005_r8          ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
+        self%kPO4            = 0.01_r8           ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%kDOP            = 0.3_r8            ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%kNO3            = 0.25_r8           ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%kNH4            = 0.01_r8           ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%kSiO3           = 0.0_r8            ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%Qp_fixed        =  Qp_zoo           ! only used for lvariable_PtoC=.false.
         self%gQfe_0          = 35.0e-6_r8
-        self%gQfe_min        = 3.0e-6_r8
+        self%gQfe_min        = 2.7e-6_r8
         self%alphaPI_per_day = 0.39_r8
         self%PCref_per_day   = 5.0_r8
         self%thetaN_max      = 2.5_r8
@@ -248,7 +242,7 @@ contains
         self%kSiO3           = 0.7_r8            ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%Qp_fixed        =  Qp_zoo           ! only used for lvariable_PtoC=.false.
         self%gQfe_0          = 35.0e-6_r8
-        self%gQfe_min        = 3.0e-6_r8
+        self%gQfe_min        = 2.7e-6_r8
         self%alphaPI_per_day = 0.29_r8
         self%PCref_per_day   = 5.0_r8
         self%thetaN_max      = 4.0_r8
@@ -275,9 +269,9 @@ contains
         self%kSiO3           = 0.0_r8            ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%Qp_fixed        = 0.32_r8 * Qp_zoo  ! only used for lvariable_PtoC=.false.
         self%gQfe_0          = 70.0e-6_r8
-        self%gQfe_min        = 6.0e-6_r8
+        self%gQfe_min        = 5.4e-6_r8
         self%alphaPI_per_day = 0.39_r8
-        self%PCref_per_day   = 2.2_r8
+        self%PCref_per_day   = 2.5_r8
         self%thetaN_max      = 2.5_r8
         self%loss_thres      = 0.02_r8
         self%loss_thres2     = 0.001_r8
@@ -384,7 +378,7 @@ contains
         self%lname = 'Grazing of diat by zoo'             ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%auto_ind_cnt = 1                             ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%zoo_ind_cnt = 0                              ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
-        self%z_umax_0_per_day = 3.05_r8                   ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
+        self%z_umax_0_per_day = 3.1_r8                    ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%z_grz            = 1.2_r8                    ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%graze_zoo        = 0.25_r8                   ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%graze_poc        = 0.38_r8                   ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
@@ -397,7 +391,7 @@ contains
         self%lname = 'Grazing of diaz by zoo'             ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%auto_ind_cnt = 1                             ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%zoo_ind_cnt = 0                              ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
-        self%z_umax_0_per_day = 3.1_r8                    ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
+        self%z_umax_0_per_day = 3.25_r8                   ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%z_grz            = 1.2_r8                    ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%graze_zoo        = 0.3_r8                    ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
         self%graze_poc        = 0.1_r8                    ! CESM USERS - DO NOT CHANGE HERE! POP calls put_setting() for this var, see CESM NOTE in marbl_settings_mod
