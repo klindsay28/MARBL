@@ -1298,7 +1298,7 @@ contains
       ! Particulate 2D diags
       lname = 'CaCO3 Flux Hitting Sea Floor'
       sname = 'calcToFloor'
-      units = 'nmolC/cm^2/s'
+      units = 'nmol/cm^2/s'
       vgrid = 'none'
       truncate = .false.
       call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
