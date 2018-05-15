@@ -740,7 +740,6 @@ contains
             P_iron%remin(k), POC%remin(k), POP%remin(k), &
             P_SiO2%remin(k), P_CaCO3%remin(k), P_CaCO3_ALT_CO2%remin(k), &
             other_remin(k), PON_remin(k), &
-            interior_restore(:, k), &
             tracer_local(o2_ind, k), &
             o2_production(k), o2_consumption(k), &
             dtracers(:, k), marbl_tracer_indices )
@@ -4574,7 +4573,7 @@ contains
              dissolved_organic_matter, dissolved_organic_matter_shadow,               &
              nitrif, denitrif, sed_denitrif, Fe_scavenge, Lig_prod, Lig_loss,         &
              P_iron_remin, POC_remin, POP_remin, P_SiO2_remin, P_CaCO3_remin,         &
-             P_CaCO3_ALT_CO2_remin, other_remin, PON_remin, interior_restore,         &
+             P_CaCO3_ALT_CO2_remin, other_remin, PON_remin,                           &
              O2_loc, o2_production, o2_consumption, dtracers, marbl_tracer_indices)
 
     use marbl_settings_mod, only : lNK_shadow_tracers
@@ -4601,7 +4600,6 @@ contains
     real(r8)                                 , intent(in)  :: P_CaCO3_ALT_CO2_remin
     real(r8)                                 , intent(in)  :: other_remin
     real(r8)                                 , intent(in)  :: PON_remin
-    real(r8)                                 , intent(in)  :: interior_restore(:)
     real(r8)                                 , intent(in)  :: O2_loc
     real(r8)                                 , intent(out) :: o2_production
     real(r8)                                 , intent(out) :: o2_consumption
@@ -4752,12 +4750,11 @@ contains
     end do
 
     !-----------------------------------------------------------------------
-    ! shadow SiO3 tendency uses its own restoring term
-    !   it is otherwise identical to the SiO3 tendency
+    ! shadow SiO3 non-restoring tendency is identical to the SiO3 non-restoring tendency
     !-----------------------------------------------------------------------
 
     if (lNK_shadow_tracers) then
-      dtracers(sio3_shadow_ind) = dtracers(sio3_ind) + (interior_restore(sio3_shadow_ind) - interior_restore(sio3_ind))
+      dtracers(sio3_shadow_ind) = dtracers(sio3_ind)
     end if
 
     !-----------------------------------------------------------------------
@@ -4769,13 +4766,13 @@ contains
          + Qp_zoo * ( sum(zoo_loss_dic(:)) + sum(zoo_graze_dic(:)) )
 
     !-----------------------------------------------------------------------
-    ! shadow PO4 tendency uses its own restoring term and shadow DOP and DOPr remin
-    !   it is otherwise identical to the PO4 tendency
+    ! shadow PO4 non-restoring tendency uses its own shadow DOP and DOPr remin
+    !   it is otherwise identical to the PO4 non-restoring tendency
     !-----------------------------------------------------------------------
 
     if (lNK_shadow_tracers) then
-      dtracers(po4_shadow_ind) = dtracers(po4_ind) + (interior_restore(po4_shadow_ind) - interior_restore(po4_ind)) &
-        + (DOP_shadow_remin - DOP_remin) + (DOPr_shadow_remin - DOPr_remin)
+      dtracers(po4_shadow_ind) = dtracers(po4_ind) + (DOP_shadow_remin - DOP_remin) &
+           + (DOPr_shadow_remin - DOPr_remin)
     end if
 
     !-----------------------------------------------------------------------
@@ -4842,8 +4839,8 @@ contains
     dtracers(dopr_ind) = (DOP_prod * DOPprod_refract) - DOPr_remin + (POP_remin * POPremin_refract)
 
     !-----------------------------------------------------------------------
-    ! shadow DOM tendencies uses shadow DOM remin
-    !   they are otherwise identical to the DOM tendencies
+    ! shadow DOM non-restoring tendencies uses shadow DOM remin
+    !   they are otherwise identical to the DOM non-restoring tendencies
     !-----------------------------------------------------------------------
 
     if (lNK_shadow_tracers) then
@@ -4879,8 +4876,8 @@ contains
     dtracers(dic_alt_co2_ind) = dtracers(dic_ind) + (P_CaCO3_ALT_CO2_remin - P_CaCO3_remin)
 
     !-----------------------------------------------------------------------
-    ! shadow DIC tendency uses shadow DOC and DOCr remin
-    !   it is otherwise identical to the DIC tendency
+    ! shadow DIC non-restoring tendency uses shadow DOC and DOCr remin
+    !   it is otherwise identical to the DIC non-restoring tendency
     !-----------------------------------------------------------------------
 
     if (lNK_shadow_tracers) then
@@ -4892,7 +4889,7 @@ contains
     !  alkalinity
     !-----------------------------------------------------------------------
 
-    dtracers(alk_ind) = interior_restore(alk_ind) - dtracers(no3_ind) + dtracers(nh4_ind) + c2 * P_CaCO3_remin
+    dtracers(alk_ind) = -dtracers(no3_ind) + dtracers(nh4_ind) + c2 * P_CaCO3_remin
 
     do auto_ind = 1, auto_cnt
        if (marbl_tracer_indices%auto_inds(auto_ind)%CaCO3_ind > 0) then
@@ -4901,16 +4898,14 @@ contains
        end if
     end do
 
-    dtracers(alk_alt_co2_ind) = dtracers(alk_ind) + c2 * (P_CaCO3_ALT_CO2_remin - P_CaCO3_remin) &
-      + (interior_restore(alk_alt_co2_ind) - interior_restore(alk_ind))
+    dtracers(alk_alt_co2_ind) = dtracers(alk_ind) + c2 * (P_CaCO3_ALT_CO2_remin - P_CaCO3_remin)
 
     !-----------------------------------------------------------------------
-    ! shadow ALK tendency uses its own restoring term
-    !   it is otherwise identical to the ALK tendency
+    ! shadow ALK non-restoring tendency is identical to the ALK non-restoring tendency
     !-----------------------------------------------------------------------
 
     if (lNK_shadow_tracers) then
-      dtracers(alk_shadow_ind) = dtracers(alk_ind) + (interior_restore(alk_shadow_ind) - interior_restore(alk_ind))
+      dtracers(alk_shadow_ind) = dtracers(alk_ind)
     end if
 
     !-----------------------------------------------------------------------

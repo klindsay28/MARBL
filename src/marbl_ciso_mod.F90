@@ -380,9 +380,6 @@ contains
          DI14C_loc          => tracer_local(marbl_tracer_indices%DI14C_ind,:)    , & ! local copy of model DI14C
          zootot13C_loc      => tracer_local(marbl_tracer_indices%zootot13C_ind,:), & ! local copy of model zootot13C
          zootot14C_loc      => tracer_local(marbl_tracer_indices%zootot14C_ind,:), &  ! local copy of model zootot14C
-         DO13Ctot_SHADOW_loc=> tracer_local(marbl_tracer_indices%DO13Ctot_SHADOW_ind,:) , & ! local copy of model DO14Ctot_SHADOW
-         DO14Ctot_SHADOW_loc=> tracer_local(marbl_tracer_indices%DO14Ctot_SHADOW_ind,:) , & ! local copy of model DO14Ctot_SHADOW
-         DI14C_SHADOW_loc   => tracer_local(marbl_tracer_indices%DI14C_SHADOW_ind,:)    , & ! local copy of model DI14C_SHADOW
          QCaCO3             => autotroph_secondary_species%QCaCO3              , & ! INPUT small phyto CaCO3/C ratio (mmol CaCO3/mmol C)
          auto_graze         => autotroph_secondary_species%auto_graze          , & ! INPUT autotroph grazing rate (mmol C/m^3/sec)
          auto_graze_zoo     => autotroph_secondary_species%auto_graze_zoo      , & ! INPUT auto_graze routed to zoo (mmol C/m^3/sec)
@@ -417,11 +414,7 @@ contains
          zootot13C_ind      => marbl_tracer_indices%zootot13C_ind              , &
          di14c_ind          => marbl_tracer_indices%di14c_ind                  , &
          do14ctot_ind       => marbl_tracer_indices%do14ctot_ind               , &
-         zootot14C_ind      => marbl_tracer_indices%zootot14C_ind              , &
-         di13c_shadow_ind   => marbl_tracer_indices%di13c_shadow_ind           , &
-         do13ctot_shadow_ind=> marbl_tracer_indices%do13ctot_shadow_ind        , &
-         di14c_shadow_ind   => marbl_tracer_indices%di14c_shadow_ind           , &
-         do14ctot_shadow_ind=> marbl_tracer_indices%do14ctot_shadow_ind          &
+         zootot14C_ind      => marbl_tracer_indices%zootot14C_ind                &
          )
 
     !-----------------------------------------------------------------------
@@ -477,16 +470,6 @@ contains
        else
           R13C_DOCtot(k) = c0
           R14C_DOCtot(k) = c0
-       end if
-
-       if (lNK_ciso_shadow_tracers) then
-          if (DOCtot_loc(k) > c0) then
-             R13C_DOCtot_SHADOW(k) = DO13Ctot_SHADOW_loc(k) / DOCtot_loc(k)
-             R14C_DOCtot_SHADOW(k) = DO14Ctot_SHADOW_loc(k) / DOCtot_loc(k)
-          else
-             R13C_DOCtot_SHADOW(k) = c0
-             R14C_DOCtot_SHADOW(k) = c0
-          end if
        end if
 
        if (DIC_loc(k) > c0) then
@@ -707,11 +690,6 @@ contains
        DO13Ctot_remin(k) = DOCtot_remin(k) * R13C_DOCtot(k)
        DO14Ctot_remin(k) = DOCtot_remin(k) * R14C_DOCtot(k)
 
-       if (lNK_ciso_shadow_tracers) then
-          DO13Ctot_SHADOW_remin(k) = DOCtot_remin(k) * R13C_DOCtot_SHADOW(k)
-          DO14Ctot_SHADOW_remin(k) = DOCtot_remin(k) * R14C_DOCtot_SHADOW(k)
-       end if
-
        !-----------------------------------------------------------------------
        !  large detritus 13C and 14C
        !-----------------------------------------------------------------------
@@ -836,17 +814,6 @@ contains
        decay_14Ctot(k) = decay_14Ctot(k) + c14_lambda_inv_sec * DO14Ctot_loc(k)
 
        !-----------------------------------------------------------------------
-       ! shadow DOM production is identical to the non-shadow values
-       ! shadow DOM tendencies uses shadow DOM remin and 14C decay
-       !-----------------------------------------------------------------------
-
-       if (lNK_ciso_shadow_tracers) then
-          column_dtracer(do13ctot_shadow_ind,k) = DO13Ctot_prod(k) - DO13Ctot_SHADOW_remin(k)
-          column_dtracer(do14ctot_shadow_ind,k) = DO14Ctot_prod(k) - DO14Ctot_SHADOW_remin(k) &
-             - c14_lambda_inv_sec * DO14Ctot_SHADOW_loc(k)
-       end if
-
-       !-----------------------------------------------------------------------
        !   column_dtracer: dissolved inorganic Carbon 13 and 14
        !-----------------------------------------------------------------------
 
@@ -866,19 +833,6 @@ contains
           - c14_lambda_inv_sec * DI14C_loc(k)
 
        decay_14Ctot(k) = decay_14Ctot(k) + c14_lambda_inv_sec * DI14C_loc(k)
-
-       !-----------------------------------------------------------------------
-       ! shadow DIC tendencies uses shadow DOC remin and 14C decay
-       !   it is otherwise identical to the DIC tendency
-       !-----------------------------------------------------------------------
-
-       if (lNK_ciso_shadow_tracers) then
-          column_dtracer(di13c_shadow_ind,k) = column_dtracer(di13c_ind,k) &
-             + (DO13Ctot_SHADOW_remin(k) - DO13Ctot_remin(k))
-          column_dtracer(di14c_shadow_ind,k) = column_dtracer(di14c_ind,k) &
-             + (DO14Ctot_SHADOW_remin(k) - DO14Ctot_remin(k)) &
-             - c14_lambda_inv_sec * (DI14C_SHADOW_loc(k) - DI14C_loc(k))
-       end if
 
        do auto_ind = 1, autotroph_cnt
           if (marbl_tracer_indices%auto_inds(auto_ind)%Ca13CO3_ind > 0) then
@@ -908,6 +862,74 @@ contains
     end do ! end of loop over k levels
 
     end associate
+
+    if (lNK_ciso_shadow_tracers) then
+       associate(                                                                   &
+            column_km          => marbl_domain%km                                 , &
+            column_kmt         => marbl_domain%kmt                                , &
+
+            DOCtot_remin       => marbl_interior_share%DOCtot_remin_fields        , & ! INPUT remineralization of DOCtot (mmol C/m^3/sec)
+            DOCtot_loc         => marbl_interior_share%DOCtot_loc_fields          , & ! INPUT local copy of model DOCtot
+            DI14C_loc          => tracer_local(marbl_tracer_indices%DI14C_ind,:)    , & ! local copy of model DI14C
+
+            DO13Ctot_SHADOW_loc=> tracer_local(marbl_tracer_indices%DO13Ctot_SHADOW_ind,:) , & ! local copy of model DO14Ctot_SHADOW
+            DO14Ctot_SHADOW_loc=> tracer_local(marbl_tracer_indices%DO14Ctot_SHADOW_ind,:) , & ! local copy of model DO14Ctot_SHADOW
+            DI14C_SHADOW_loc   => tracer_local(marbl_tracer_indices%DI14C_SHADOW_ind,:)    , & ! local copy of model DI14C_SHADOW
+
+            di13c_ind          => marbl_tracer_indices%di13c_ind                  , &
+            di14c_ind          => marbl_tracer_indices%di14c_ind                  , &
+
+            di13c_shadow_ind   => marbl_tracer_indices%di13c_shadow_ind           , &
+            do13ctot_shadow_ind=> marbl_tracer_indices%do13ctot_shadow_ind        , &
+            di14c_shadow_ind   => marbl_tracer_indices%di14c_shadow_ind           , &
+            do14ctot_shadow_ind=> marbl_tracer_indices%do14ctot_shadow_ind          &
+            )
+
+       !-----------------------------------------------------------------------
+       !  Set ratios
+       !-----------------------------------------------------------------------
+
+       do k = 1, column_km
+
+          if (DOCtot_loc(k) > c0) then
+             R13C_DOCtot_SHADOW(k) = DO13Ctot_SHADOW_loc(k) / DOCtot_loc(k)
+             R14C_DOCtot_SHADOW(k) = DO14Ctot_SHADOW_loc(k) / DOCtot_loc(k)
+          else
+             R13C_DOCtot_SHADOW(k) = c0
+             R14C_DOCtot_SHADOW(k) = c0
+          end if
+
+          !-----------------------------------------------------------------------
+          !  compute terms for DO13Ctot and DO14Ctot
+          !-----------------------------------------------------------------------
+
+          DO13Ctot_SHADOW_remin(k) = DOCtot_remin(k) * R13C_DOCtot_SHADOW(k)
+          DO14Ctot_SHADOW_remin(k) = DOCtot_remin(k) * R14C_DOCtot_SHADOW(k)
+
+          !-----------------------------------------------------------------------
+          ! shadow DOM production is identical to the non-shadow values
+          ! shadow DOM tendencies uses shadow DOM remin and 14C decay
+          !-----------------------------------------------------------------------
+
+          column_dtracer(do13ctot_shadow_ind,k) = DO13Ctot_prod(k) - DO13Ctot_SHADOW_remin(k)
+          column_dtracer(do14ctot_shadow_ind,k) = DO14Ctot_prod(k) - DO14Ctot_SHADOW_remin(k) &
+             - c14_lambda_inv_sec * DO14Ctot_SHADOW_loc(k)
+
+          !-----------------------------------------------------------------------
+          ! shadow DIC tendencies uses shadow DOC remin and 14C decay
+          !   it is otherwise identical to the DIC tendency
+          !-----------------------------------------------------------------------
+
+          column_dtracer(di13c_shadow_ind,k) = column_dtracer(di13c_ind,k) &
+             + (DO13Ctot_SHADOW_remin(k) - DO13Ctot_remin(k))
+          column_dtracer(di14c_shadow_ind,k) = column_dtracer(di14c_ind,k) &
+             + (DO14Ctot_SHADOW_remin(k) - DO14Ctot_remin(k)) &
+             - c14_lambda_inv_sec * (DI14C_SHADOW_loc(k) - DI14C_loc(k))
+
+       end do ! end of loop over k levels
+
+       end associate
+    endif
 
     ! update carbon isotope diagnostics
     ! FIXME #18: the following arguments need to be group into a derived type

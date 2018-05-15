@@ -202,6 +202,7 @@ contains
     do c = num_active_elements+1, num_elements
       co2calc_state_per_mass(c)%temp         = c0
       co2calc_state_per_mass(c)%salt         = c0
+      co2calc_state_per_mass(c)%sw_press_bar = c0
     end do
 
   end subroutine comp_per_mass_co2calc_state
