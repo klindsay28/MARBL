@@ -280,7 +280,7 @@ module marbl_diagnostics_mod
     integer(int_kind), allocatable :: zoo_graze_zoo(:)
     integer(int_kind), allocatable :: x_graze_zoo(:)
 
-    ! ids for lNK_shadow 3d fields
+    ! lNK_shadow 3d diags
     integer(int_kind) :: DOC_SHADOW_remin
     integer(int_kind) :: DOCr_SHADOW_remin
     integer(int_kind) :: DON_SHADOW_remin
@@ -341,6 +341,7 @@ module marbl_diagnostics_mod
      integer (int_kind) :: pocToSed_13C                                       ! poc burial flux to sediments
      integer (int_kind) :: pocToSed_14C                                       ! poc burial flux to sediments
 
+     ! lNK_ciso_shadow 3d diags
      integer (int_kind) :: CISO_DO13Ctot_SHADOW_remin                         ! DO13Ctot_SHADOW remineralization
      integer (int_kind) :: CISO_DO14Ctot_SHADOW_remin                         ! DO14Ctot_SHADOW remineralization
 
@@ -383,6 +384,7 @@ module marbl_diagnostics_mod
      integer(int_kind) :: NHy_FLUX
      integer(int_kind) :: NHx_SURFACE_EMIS
 
+     ! lNK_shadow surface forcing diags
      integer(int_kind) :: DIC_SHADOW_GAS_FLUX
      integer(int_kind) :: d_SF_DIC_SHADOW_d_DIC_SHADOW
      integer(int_kind) :: d_SF_DIC_SHADOW_d_ALK_SHADOW
@@ -403,6 +405,8 @@ module marbl_diagnostics_mod
      integer(int_kind) :: CISO_D14C_atm             ! atmospheric delta14C in permil
      integer(int_kind) :: CISO_eps_aq_g_surf        ! tavg id for eps_aq_g_surf
      integer(int_kind) :: CISO_eps_dic_g_surf       ! tavg id for eps_dic_g_surf
+
+     ! lNK_ciso_shadow surface forcing diags
      integer(int_kind) :: d_SF_DI13C_SHADOW_d_DI13C_SHADOW ! tavg id for d_SF_DI13C_SHADOW_d_DI13C_SHADOW
      integer(int_kind) :: d_SF_DI14C_SHADOW_d_DI14C_SHADOW ! tavg id for d_SF_DI14C_SHADOW_d_DI14C_SHADOW
   end type marbl_surface_forcing_diagnostics_indexing_type
