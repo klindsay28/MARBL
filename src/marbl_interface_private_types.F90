@@ -222,8 +222,6 @@ module marbl_interface_private_types
     integer (int_kind) :: docr_ind        = 0 ! refractory DOC
 
     ! Shadow tracers
-    integer (int_kind) :: po4_shadow_ind  = 0 ! dissolved inorganic phosphate, shadow
-    integer (int_kind) :: sio3_shadow_ind = 0 ! dissolved inorganic silicate, shadow
     integer (int_kind) :: dic_shadow_ind  = 0 ! dissolved inorganic carbon, shadow
     integer (int_kind) :: alk_shadow_ind  = 0 ! alkalinity, shadow
     integer (int_kind) :: doc_shadow_ind  = 0 ! dissolved organic carbon, shadow
@@ -232,6 +230,10 @@ module marbl_interface_private_types
     integer (int_kind) :: dopr_shadow_ind = 0 ! refractory DOP, shadow
     integer (int_kind) :: donr_shadow_ind = 0 ! refractory DON, shadow
     integer (int_kind) :: docr_shadow_ind = 0 ! refractory DOC, shadow
+
+    ! Nutrient Shadow tracers
+    integer (int_kind) :: po4_shadow_ind  = 0 ! dissolved inorganic phosphate, shadow
+    integer (int_kind) :: sio3_shadow_ind = 0 ! dissolved inorganic silicate, shadow
 
     ! CISO tracers
     integer (int_kind) :: di13c_ind       = 0 ! dissolved inorganic carbon 13
@@ -297,7 +299,7 @@ module marbl_interface_private_types
      integer(int_kind) :: pressure_id    = 0
      integer(int_kind) :: fesedflux_id   = 0
 
-     ! Column fields for NK shadow tracers
+     ! Column fields for NK nutrient shadow tracers
      integer(int_kind) :: normalized_POP_remin_id = 0
      integer(int_kind) :: normalized_bSi_remin_id = 0
 
@@ -533,8 +535,11 @@ contains
     this%nhx_surface_emis = c0
 
     allocate(this%flux_co2_shadow(num_elements))
+    this%flux_co2_shadow = c0
     allocate(this%d_sf_dic_shadow_d_dic_shadow(num_elements))
+    this%d_sf_dic_shadow_d_dic_shadow = c0
     allocate(this%d_sf_dic_shadow_d_alk_shadow(num_elements))
+    this%d_sf_dic_shadow_d_alk_shadow = c0
 
   end subroutine marbl_surface_forcing_internal_constructor
 
@@ -585,6 +590,7 @@ contains
     use marbl_settings_mod, only : ciso_on
     use marbl_settings_mod, only : lvariable_PtoC
     use marbl_settings_mod, only : lNK_shadow_tracers
+    use marbl_settings_mod, only : lNK_nutrient_shadow_tracers
     use marbl_settings_mod, only : lNK_ciso_shadow_tracers
 
     class(marbl_tracer_index_type), intent(out)   :: this
@@ -655,8 +661,6 @@ contains
     end do
 
     if (lNK_shadow_tracers) then
-      call this%add_tracer_index('po4_shadow',  'ecosys_base', this%po4_shadow_ind,  marbl_status_log)
-      call this%add_tracer_index('sio3_shadow', 'ecosys_base', this%sio3_shadow_ind, marbl_status_log)
       call this%add_tracer_index('dic_shadow',  'ecosys_base', this%dic_shadow_ind,  marbl_status_log)
       call this%add_tracer_index('alk_shadow',  'ecosys_base', this%alk_shadow_ind,  marbl_status_log)
       call this%add_tracer_index('doc_shadow',  'ecosys_base', this%doc_shadow_ind,  marbl_status_log)
@@ -665,6 +669,11 @@ contains
       call this%add_tracer_index('dopr_shadow', 'ecosys_base', this%dopr_shadow_ind, marbl_status_log)
       call this%add_tracer_index('donr_shadow', 'ecosys_base', this%donr_shadow_ind, marbl_status_log)
       call this%add_tracer_index('docr_shadow', 'ecosys_base', this%docr_shadow_ind, marbl_status_log)
+    end if
+
+    if (lNK_nutrient_shadow_tracers) then
+      call this%add_tracer_index('po4_shadow',  'ecosys_base', this%po4_shadow_ind,  marbl_status_log)
+      call this%add_tracer_index('sio3_shadow', 'ecosys_base', this%sio3_shadow_ind, marbl_status_log)
     end if
 
     if (ciso_on) then
@@ -935,7 +944,7 @@ contains
     ! This subroutine sets the interior forcing indexes, which are used to
     ! determine what forcing fields are required from the driver.
 
-    use marbl_settings_mod, only : lNK_shadow_tracers
+    use marbl_settings_mod, only : lNK_nutrient_shadow_tracers
 
     class(marbl_interior_forcing_indexing_type), intent(out)   :: this
     character(len=char_len), dimension(:),       intent(in)    :: tracer_names
@@ -1044,8 +1053,8 @@ contains
 
       if (tracer_restore_cnt .gt. 0) call marbl_status_log%log_noerror('', subname)
 
-      ! fields for NK shadow tracers
-      if (lNK_shadow_tracers) then
+      ! fields for NK nutrient shadow tracers
+      if (lNK_nutrient_shadow_tracers) then
         ! normalized POP remin profile
         forcing_cnt = forcing_cnt + 1
         this%normalized_POP_remin_id = forcing_cnt

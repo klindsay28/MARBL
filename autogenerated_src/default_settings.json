@@ -812,7 +812,7 @@
       },
       "PO4_SHADOW": {
          "dependencies": {
-            "lNK_shadow_tracers": ".true."
+            "lNK_nutrient_shadow_tracers": ".true."
          },
          "long_name": "Dissolved Inorganic Phosphate, Shadow",
          "units": "mmol/m^3"
@@ -823,7 +823,7 @@
       },
       "SiO3_SHADOW": {
          "dependencies": {
-            "lNK_shadow_tracers": ".true."
+            "lNK_nutrient_shadow_tracers": ".true."
          },
          "long_name": "Dissolved Inorganic Silicate, Shadow",
          "units": "mmol/m^3"
@@ -949,6 +949,13 @@
          "datatype": "logical",
          "default_value": ".false.",
          "longname": "Control whether Newton-Krylov (NK) CISO shadow tracers are active",
+         "subcategory": "2. config flags",
+         "units": "unitless"
+      },
+      "lNK_nutrient_shadow_tracers": {
+         "datatype": "logical",
+         "default_value": ".false.",
+         "longname": "Control whether Newton-Krylov (NK) nutrient shadow tracers are active",
          "subcategory": "2. config flags",
          "units": "unitless"
       },

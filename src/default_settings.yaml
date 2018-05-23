@@ -124,16 +124,6 @@ _tracer_list :
       units : mmol/m^3
 
    # Non-living tracers (NK_shadow only)
-   PO4_SHADOW :
-      dependencies :
-         lNK_shadow_tracers : .true.
-      long_name : Dissolved Inorganic Phosphate, Shadow
-      units : mmol/m^3
-   SiO3_SHADOW :
-      dependencies :
-         lNK_shadow_tracers : .true.
-      long_name : Dissolved Inorganic Silicate, Shadow
-      units : mmol/m^3
    DIC_SHADOW :
       dependencies :
          lNK_shadow_tracers : .true.
@@ -174,7 +164,20 @@ _tracer_list :
          lNK_shadow_tracers : .true.
       long_name : Refractory DOC, Shadow
       units : mmol/m^3
-   # Non-living (NK_ciso_shadow only)
+
+   # Non-living tracers (lNK_nutrient_shadow only)
+   PO4_SHADOW :
+      dependencies :
+         lNK_nutrient_shadow_tracers : .true.
+      long_name : Dissolved Inorganic Phosphate, Shadow
+      units : mmol/m^3
+   SiO3_SHADOW :
+      dependencies :
+         lNK_nutrient_shadow_tracers : .true.
+      long_name : Dissolved Inorganic Silicate, Shadow
+      units : mmol/m^3
+
+   # Non-living tracers (NK_ciso_shadow only)
    DI13C_SHADOW :
       dependencies :
          lNK_ciso_shadow_tracers : .true.
@@ -350,6 +353,12 @@ general_parms :
       _append_to_config_keywords : true
    lNK_shadow_tracers :
       longname : Control whether Newton-Krylov (NK) shadow tracers are active
+      subcategory : 2. config flags
+      units : unitless
+      datatype : logical
+      default_value : .false.
+   lNK_nutrient_shadow_tracers :
+      longname : Control whether Newton-Krylov (NK) nutrient shadow tracers are active
       subcategory : 2. config flags
       units : unitless
       datatype : logical

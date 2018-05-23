@@ -450,7 +450,7 @@ contains
 
     !  Compute time derivatives for ecosystem state variables
 
-    use marbl_settings_mod, only : lNK_shadow_tracers
+    use marbl_settings_mod, only : lNK_nutrient_shadow_tracers
     use marbl_temperature, only : marbl_temperature_potemp
     use marbl_ciso_mod, only : marbl_ciso_set_interior_forcing
     use marbl_interface_private_types, only : marbl_internal_timers_type
@@ -593,7 +593,7 @@ contains
                interior_forcing_indices,                    &
                interior_restore)
 
-    if (lNK_shadow_tracers) then
+    if (lNK_nutrient_shadow_tracers) then
       call marbl_restore_compute_interior_restore_shadow(     &
                  tracers,                                     &
                  kmt,                                         &
@@ -1787,6 +1787,7 @@ contains
     use marbl_settings_mod, only : lcompute_nhx_surface_emis
     use marbl_settings_mod, only : xkw_coeff
     use marbl_settings_mod, only : lNK_shadow_tracers
+    use marbl_settings_mod, only : lNK_nutrient_shadow_tracers
     use marbl_ciso_mod, only : marbl_ciso_set_surface_forcing
 
     implicit none
@@ -1887,10 +1888,10 @@ contains
          alk_ind           => marbl_tracer_indices%alk_ind,                                     &
          alk_alt_co2_ind   => marbl_tracer_indices%alk_alt_co2_ind,                             &
 
-         po4_shadow_ind    => marbl_tracer_indices%po4_shadow_ind,                              &
-         sio3_shadow_ind   => marbl_tracer_indices%sio3_shadow_ind,                             &
          dic_shadow_ind    => marbl_tracer_indices%dic_shadow_ind,                              &
          alk_shadow_ind    => marbl_tracer_indices%alk_shadow_ind,                              &
+         po4_shadow_ind    => marbl_tracer_indices%po4_shadow_ind,                              &
+         sio3_shadow_ind   => marbl_tracer_indices%sio3_shadow_ind,                             &
 
          pv_surf_fields       => surface_forcing_share%pv_surf_fields(:),                           & ! out
          dic_surf_fields      => surface_forcing_share%dic_surf_fields(:),                          & ! out
@@ -2358,7 +2359,7 @@ contains
     stf(:, po4_ind)  = stf(:, po4_ind)  + (dust_flux_in * (0.00105_r8 *  0.15_r8 / 30.974_r8 * 1.0e9_r8))
     stf(:, sio3_ind) = stf(:, sio3_ind) + (dust_flux_in * (  0.308_r8 * 0.075_r8 / 28.085_r8 * 1.0e9_r8))
 
-    if (lNK_shadow_tracers) then
+    if (lNK_nutrient_shadow_tracers) then
       stf(:, po4_shadow_ind)  = stf(:, po4_shadow_ind)  + (dust_flux_in * (0.00105_r8 *  0.15_r8 / 30.974_r8 * 1.0e9_r8))
       stf(:, sio3_shadow_ind) = stf(:, sio3_shadow_ind) + (dust_flux_in * (  0.308_r8 * 0.075_r8 / 28.085_r8 * 1.0e9_r8))
     end if
@@ -4577,6 +4578,7 @@ contains
              O2_loc, o2_production, o2_consumption, dtracers, marbl_tracer_indices)
 
     use marbl_settings_mod, only : lNK_shadow_tracers
+    use marbl_settings_mod, only : lNK_nutrient_shadow_tracers
 
     integer                                  , intent(in)  :: auto_cnt
     integer                                  , intent(in)  :: zoo_cnt
@@ -4686,8 +4688,6 @@ contains
          donr_ind          => marbl_tracer_indices%donr_ind,        &
          docr_ind          => marbl_tracer_indices%docr_ind,        &
 
-         po4_shadow_ind    => marbl_tracer_indices%po4_shadow_ind,  &
-         sio3_shadow_ind   => marbl_tracer_indices%sio3_shadow_ind, &
          dic_shadow_ind    => marbl_tracer_indices%dic_shadow_ind,  &
          alk_shadow_ind    => marbl_tracer_indices%alk_shadow_ind,  &
          doc_shadow_ind    => marbl_tracer_indices%doc_shadow_ind,  &
@@ -4695,7 +4695,10 @@ contains
          dop_shadow_ind    => marbl_tracer_indices%dop_shadow_ind,  &
          dopr_shadow_ind   => marbl_tracer_indices%dopr_shadow_ind, &
          donr_shadow_ind   => marbl_tracer_indices%donr_shadow_ind, &
-         docr_shadow_ind   => marbl_tracer_indices%docr_shadow_ind  &
+         docr_shadow_ind   => marbl_tracer_indices%docr_shadow_ind, &
+
+         po4_shadow_ind    => marbl_tracer_indices%po4_shadow_ind,  &
+         sio3_shadow_ind   => marbl_tracer_indices%sio3_shadow_ind  &
          )
 
     !-----------------------------------------------------------------------
@@ -4753,7 +4756,7 @@ contains
     ! shadow SiO3 non-restoring tendency is identical to the SiO3 non-restoring tendency
     !-----------------------------------------------------------------------
 
-    if (lNK_shadow_tracers) then
+    if (lNK_nutrient_shadow_tracers) then
       dtracers(sio3_shadow_ind) = dtracers(sio3_ind)
     end if
 
@@ -4770,9 +4773,13 @@ contains
     !   it is otherwise identical to the PO4 non-restoring tendency
     !-----------------------------------------------------------------------
 
-    if (lNK_shadow_tracers) then
-      dtracers(po4_shadow_ind) = dtracers(po4_ind) + (DOP_shadow_remin - DOP_remin) &
-           + (DOPr_shadow_remin - DOPr_remin)
+    if (lNK_nutrient_shadow_tracers) then
+      if (lNK_nutrient_shadow_tracers) then
+        dtracers(po4_shadow_ind) = dtracers(po4_ind) + (DOP_shadow_remin - DOP_remin) &
+             + (DOPr_shadow_remin - DOPr_remin)
+      else
+        dtracers(po4_shadow_ind) = dtracers(po4_ind)
+      end if
     end if
 
     !-----------------------------------------------------------------------

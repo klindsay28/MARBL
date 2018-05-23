@@ -518,6 +518,7 @@ contains
     !-----------------------------------------------------------------------
 
     use marbl_settings_mod, only : lNK_shadow_tracers
+    use marbl_settings_mod, only : lNK_nutrient_shadow_tracers
 
     implicit none
 
@@ -561,10 +562,6 @@ contains
                marbl_tracer_metadata(marbl_tracer_indices%alk_alt_co2_ind), base_units='meq/m^3')
 
     if (lNK_shadow_tracers) then
-      call marbl_init_non_autotroph_tracer_metadata('PO4_SHADOW', 'Dissolved Inorganic Phosphate, Shadow', &
-                 marbl_tracer_metadata(marbl_tracer_indices%po4_shadow_ind))
-      call marbl_init_non_autotroph_tracer_metadata('SiO3_SHADOW', 'Dissolved Inorganic Silicate, Shadow', &
-                 marbl_tracer_metadata(marbl_tracer_indices%sio3_shadow_ind))
       call marbl_init_non_autotroph_tracer_metadata('DIC_SHADOW', 'Dissolved Inorganic Carbon, Shadow', &
                  marbl_tracer_metadata(marbl_tracer_indices%dic_shadow_ind))
       call marbl_init_non_autotroph_tracer_metadata('ALK_SHADOW', 'Alkalinity, Shadow', &
@@ -581,6 +578,13 @@ contains
                  marbl_tracer_metadata(marbl_tracer_indices%donr_shadow_ind))
       call marbl_init_non_autotroph_tracer_metadata('DOCr_SHADOW', 'Refractory DOC, Shadow', &
                  marbl_tracer_metadata(marbl_tracer_indices%docr_shadow_ind))
+    endif
+
+    if (lNK_nutrient_shadow_tracers) then
+      call marbl_init_non_autotroph_tracer_metadata('PO4_SHADOW', 'Dissolved Inorganic Phosphate, Shadow', &
+                 marbl_tracer_metadata(marbl_tracer_indices%po4_shadow_ind))
+      call marbl_init_non_autotroph_tracer_metadata('SiO3_SHADOW', 'Dissolved Inorganic Silicate, Shadow', &
+                 marbl_tracer_metadata(marbl_tracer_indices%sio3_shadow_ind))
     endif
 
   end subroutine marbl_init_non_autotroph_tracers_metadata
