@@ -688,6 +688,24 @@ DOCr_remin_zint_100m :
    frequency : medium
    operator : average
    diag_mode : full
+NITRIF_zint :
+   dependencies :
+      base_bio_on : .true.
+   longname : Nitrification Vertical Integral
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
+DENITRIF_zint :
+   dependencies :
+      base_bio_on : .true.
+   longname : Denitrification Vertical Integral
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
 Jint_Ctot :
    dependencies :
       base_bio_on : .true.

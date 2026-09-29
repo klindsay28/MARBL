@@ -543,6 +543,8 @@ module marbl_interface_private_types
     integer(int_kind) :: DOC_remin_zint_100m
     integer(int_kind) :: DOCr_remin_zint
     integer(int_kind) :: DOCr_remin_zint_100m
+    integer(int_kind) :: NITRIF_zint
+    integer(int_kind) :: DENITRIF_zint
     integer(int_kind) :: Jint_Ctot
     integer(int_kind) :: Jint_Ntot
     integer(int_kind) :: Jint_Ptot

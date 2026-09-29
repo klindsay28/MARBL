@@ -1488,6 +1488,17 @@
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
    },
+   "DENITRIF_zint": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "Denitrification Vertical Integral",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
+   },
    "DOC_prod": {
       "dependencies": {
          "base_bio_on": ".true."
@@ -2077,6 +2088,17 @@
       "operator": "average",
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
+   },
+   "NITRIF_zint": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "Nitrification Vertical Integral",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
    },
    "NOx_FLUX": {
       "dependencies": {

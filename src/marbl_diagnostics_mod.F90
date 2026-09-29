@@ -644,6 +644,30 @@ contains
           return
         end if
 
+        lname = 'Nitrification Vertical Integral'
+        sname = 'NITRIF_zint'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%NITRIF_zint, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'Denitrification Vertical Integral'
+        sname = 'DENITRIF_zint'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%DENITRIF_zint, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
         lname = 'Vertical Integral of Conservative Subterms of Source Sink Term for Ctot'
         sname = 'Jint_Ctot'
         units = unit_system%conc_flux_units
@@ -3296,8 +3320,8 @@ contains
     end if
     end associate
 
-    call store_diagnostics_nitrification(&
-         nitrif, denitrif, marbl_interior_tendency_diags)
+    call store_diagnostics_nitrification(domain, &
+         nitrif, denitrif, unit_system, marbl_interior_tendency_diags)
 
     call store_diagnostics_oxygen(domain, &
          interior_tendency_forcing_ind, interior_tendency_forcings, &
@@ -3658,19 +3682,29 @@ contains
 
   !***********************************************************************
 
-  subroutine store_diagnostics_nitrification(nitrif, denitrif, marbl_interior_diags)
+  subroutine store_diagnostics_nitrification(marbl_domain, &
+         nitrif, denitrif, unit_system, marbl_interior_diags)
 
-    real(r8)                     , intent(in)    :: nitrif(:)
-    real(r8)                     , intent(in)    :: denitrif(:)
-    type(marbl_diagnostics_type) , intent(inout) :: marbl_interior_diags
+    type(marbl_domain_type),      intent(in)    :: marbl_domain
+    real(r8),                     intent(in)    :: nitrif(:)
+    real(r8),                     intent(in)    :: denitrif(:)
+    type(unit_system_type),       intent(in)    :: unit_system
+    type(marbl_diagnostics_type), intent(inout) :: marbl_interior_diags
 
-    associate(                                     &
-         diags => marbl_interior_diags%diags,      &
-         ind   => marbl_interior_tendency_diag_ind &
+    associate(                                        &
+         diags   => marbl_interior_diags%diags,       &
+         ind     => marbl_interior_tendency_diag_ind, &
+         kmt     => marbl_domain%kmt,                 &
+         delta_z => marbl_domain%delta_z              &
          )
 
     diags(ind%NITRIF)%field_3d(:, 1)   = nitrif
+    call marbl_diagnostics_share_compute_vertical_integrals(nitrif, &
+         delta_z, kmt, unit_system, full_depth_integral=diags(ind%NITRIF_zint)%field_2d(1))
+
     diags(ind%DENITRIF)%field_3d(:, 1) = denitrif
+    call marbl_diagnostics_share_compute_vertical_integrals(denitrif, &
+         delta_z, kmt, unit_system, full_depth_integral=diags(ind%DENITRIF_zint)%field_2d(1))
 
     end associate
 
