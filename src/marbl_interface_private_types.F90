@@ -543,6 +543,10 @@ module marbl_interface_private_types
     integer(int_kind) :: DOC_remin_zint_100m
     integer(int_kind) :: DOCr_remin_zint
     integer(int_kind) :: DOCr_remin_zint_100m
+    integer(int_kind) :: DON_prod_zint
+    integer(int_kind) :: DONr_remin_zint
+    integer(int_kind) :: DOP_prod_zint
+    integer(int_kind) :: DOPr_remin_zint
     integer(int_kind) :: NITRIF_zint
     integer(int_kind) :: DENITRIF_zint
     integer(int_kind) :: Jint_Ctot
@@ -683,6 +687,8 @@ module marbl_interface_private_types
     integer(int_kind) :: POC_REMIN_DOCr_zint_100m
     integer(int_kind) :: POC_REMIN_DIC_zint
     integer(int_kind) :: POC_REMIN_DIC_zint_100m
+    integer(int_kind) :: PON_REMIN_DONr_zint
+    integer(int_kind) :: POP_REMIN_DOPr_zint
     integer(int_kind) :: CaCO3_PROD_zint
     integer(int_kind) :: CaCO3_PROD_zint_100m
     integer(int_kind) :: CaCO3_REMIN_zint

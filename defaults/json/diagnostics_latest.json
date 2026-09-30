@@ -1631,6 +1631,17 @@
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
    },
+   "DON_prod_zint": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "Vertical Integral of DON Production",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
+   },
    "DON_remin": {
       "dependencies": {
          "base_bio_on": ".true."
@@ -1652,6 +1663,17 @@
       "operator": "average",
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
+   },
+   "DONr_remin_zint": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "Vertical Integral of DONr Remineralization",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
    },
    "DOP_((autotroph_sname))_uptake": {
       "diag_mode": "full",
@@ -1684,6 +1706,17 @@
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
    },
+   "DOP_prod_zint": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "Vertical Integral of DOP Production",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
+   },
    "DOP_remin": {
       "dependencies": {
          "base_bio_on": ".true."
@@ -1705,6 +1738,17 @@
       "operator": "average",
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
+   },
+   "DOPr_remin_zint": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "Vertical Integral of DOPr Remineralization",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
    },
    "DUST_FLUX": {
       "dependencies": {
@@ -2451,6 +2495,17 @@
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
    },
+   "PON_REMIN_DONr_zint": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "Vertical Integral of PON Remineralization routed to DONr",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
+   },
    "PON_REMIN_NH4": {
       "dependencies": {
          "base_bio_on": ".true."
@@ -2505,6 +2560,17 @@
       "operator": "average",
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
+   },
+   "POP_REMIN_DOPr_zint": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "Vertical Integral of POP Remineralization routed to DOPr",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
    },
    "POP_REMIN_PO4": {
       "dependencies": {

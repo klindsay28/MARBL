@@ -688,6 +688,42 @@ DOCr_remin_zint_100m :
    frequency : medium
    operator : average
    diag_mode : full
+DON_prod_zint :
+   dependencies :
+      base_bio_on : .true.
+   longname : Vertical Integral of DON Production
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
+DONr_remin_zint :
+   dependencies :
+      base_bio_on : .true.
+   longname : Vertical Integral of DONr Remineralization
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
+DOP_prod_zint :
+   dependencies :
+      base_bio_on : .true.
+   longname : Vertical Integral of DOP Production
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
+DOPr_remin_zint :
+   dependencies :
+      base_bio_on : .true.
+   longname : Vertical Integral of DOPr Remineralization
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
 NITRIF_zint :
    dependencies :
       base_bio_on : .true.
@@ -1395,6 +1431,24 @@ POC_REMIN_DIC_zint_100m :
    dependencies :
       base_bio_on : .true.
    longname : Vertical Integral of POC Remineralization routed to DIC, 0-100m
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
+PON_REMIN_DONr_zint :
+   dependencies :
+      base_bio_on : .true.
+   longname : Vertical Integral of PON Remineralization routed to DONr
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
+POP_REMIN_DOPr_zint :
+   dependencies :
+      base_bio_on : .true.
+   longname : Vertical Integral of POP Remineralization routed to DOPr
    units : mmol/m^3 cm/s
    vertical_grid : none
    frequency : medium

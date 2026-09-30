@@ -644,6 +644,54 @@ contains
           return
         end if
 
+        lname = 'Vertical Integral of DON Production'
+        sname = 'DON_prod_zint'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%DON_prod_zint, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'Vertical Integral of DONr Remineralization'
+        sname = 'DONr_remin_zint'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%DONr_remin_zint, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'Vertical Integral of DOP Production'
+        sname = 'DOP_prod_zint'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%DOP_prod_zint, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'Vertical Integral of DOPr Remineralization'
+        sname = 'DOPr_remin_zint'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%DOPr_remin_zint, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
         lname = 'Nitrification Vertical Integral'
         sname = 'NITRIF_zint'
         units = unit_system%conc_flux_units
@@ -2301,6 +2349,30 @@ contains
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
             ind%POC_REMIN_DIC_zint_100m, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'Vertical Integral of PON Remineralization routed to DONr'
+        sname = 'PON_REMIN_DONr_zint'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%PON_REMIN_DONr_zint, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'Vertical Integral of POP Remineralization routed to DOPr'
+        sname = 'POP_REMIN_DOPr_zint'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%POP_REMIN_DOPr_zint, marbl_status_log)
         if (marbl_status_log%labort_marbl) then
           call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
           return
@@ -4053,6 +4125,8 @@ contains
     diags(ind%POP_FLUX_IN)%field_3d(kmt+1, 1)    = sed_loss
     diags(ind%POP_PROD)%field_3d(:, 1)           = POP%prod
     diags(ind%POP_REMIN_DOPr)%field_3d(:, 1)     = POP%remin * POPremin_refract
+    call marbl_diagnostics_share_compute_vertical_integrals(diags(ind%POP_REMIN_DOPr)%field_3d(:, 1), &
+         delta_z, kmt, unit_system, full_depth_integral=diags(ind%POP_REMIN_DOPr_zint)%field_2d(1))
     diags(ind%POP_REMIN_PO4)%field_3d(:, 1)      = POP%remin * (c1 - POPremin_refract)
     diags(ind%popToSed)%field_2d(1)              = sed_loss
 
@@ -4063,6 +4137,8 @@ contains
     diags(ind%PON_FLUX_IN)%field_3d(kmt+1, 1)    = sed_loss
     diags(ind%PON_PROD)%field_3d(:, 1)           = PON%prod
     diags(ind%PON_REMIN_DONr)%field_3d(:, 1)     = PON%remin * PONremin_refract
+    call marbl_diagnostics_share_compute_vertical_integrals(diags(ind%PON_REMIN_DONr)%field_3d(:, 1), &
+         delta_z, kmt, unit_system, full_depth_integral=diags(ind%PON_REMIN_DONr_zint)%field_2d(1))
     diags(ind%PON_REMIN_NH4)%field_3d(:, 1)      = PON%remin * (c1 - PONremin_refract)
     diags(ind%ponToSed)%field_2d(1)              = sed_loss
     diags(ind%SedDenitrif)%field_2d(1)           = sum(sed_denitrif * delta_z)
@@ -4335,6 +4411,18 @@ contains
     call marbl_diagnostics_share_compute_vertical_integrals(diags(ind%DOCr_remin)%field_3d(:,1), &
          delta_z, kmt, unit_system, full_depth_integral=diags(ind%DOCr_remin_zint)%field_2d(1), &
          near_surface_integral=diags(ind%DOCr_remin_zint_100m)%field_2d(1))
+
+    call marbl_diagnostics_share_compute_vertical_integrals(diags(ind%DON_prod)%field_3d(:,1), &
+         delta_z, kmt, unit_system, full_depth_integral=diags(ind%DON_prod_zint)%field_2d(1))
+
+    call marbl_diagnostics_share_compute_vertical_integrals(diags(ind%DONr_remin)%field_3d(:,1), &
+         delta_z, kmt, unit_system, full_depth_integral=diags(ind%DONr_remin_zint)%field_2d(1))
+
+    call marbl_diagnostics_share_compute_vertical_integrals(diags(ind%DOP_prod)%field_3d(:,1), &
+         delta_z, kmt, unit_system, full_depth_integral=diags(ind%DOP_prod_zint)%field_2d(1))
+
+    call marbl_diagnostics_share_compute_vertical_integrals(diags(ind%DOPr_remin)%field_3d(:,1), &
+         delta_z, kmt, unit_system, full_depth_integral=diags(ind%DOPr_remin_zint)%field_2d(1))
 
     end associate
 
