@@ -706,6 +706,15 @@ DENITRIF_zint :
    frequency : medium
    operator : average
    diag_mode : full
+Nfix_zint :
+   dependencies :
+      base_bio_on : .true.
+   longname : Total N Fixation Vertical Integral
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : never
+   operator : average
+   diag_mode : minimal
 Jint_Ctot :
    dependencies :
       base_bio_on : .true.
@@ -2318,6 +2327,15 @@ graze_((autotroph_sname))_((zooplankton_sname))_zint_100m :
    frequency : never
    operator : average
    diag_mode : full
+((autotroph_sname))_Nfix_zint :
+   dependencies :
+      ((autotroph_Nfixer)) : true
+   longname : ((autotroph_lname)) N Fixation Vertical Integral
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : minimal
 ((autotroph_sname))_Qp :
    dependencies : # NOTE: POP treats this as a dependency, though MARBL defines
                   #       these diagnostics independent of lvariable_PtoC; my

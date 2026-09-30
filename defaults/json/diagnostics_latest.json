@@ -105,6 +105,17 @@
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
    },
+   "((autotroph_sname))_Nfix_zint": {
+      "dependencies": {
+         "((autotroph_Nfixer))": true
+      },
+      "diag_mode": "minimal",
+      "frequency": "medium",
+      "longname": "((autotroph_lname)) N Fixation Vertical Integral",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
+   },
    "((autotroph_sname))_P_lim_Cweight_avg_100m": {
       "diag_mode": "minimal",
       "frequency": "medium",
@@ -2121,6 +2132,17 @@
       "operator": "average",
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
+   },
+   "Nfix_zint": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "minimal",
+      "frequency": "never",
+      "longname": "Total N Fixation Vertical Integral",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
    },
    "O2SAT": {
       "dependencies": {

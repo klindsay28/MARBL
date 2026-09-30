@@ -583,6 +583,7 @@ module marbl_interface_private_types
     integer(int_kind), allocatable :: photoC_NO3_zint(:)
     integer(int_kind), allocatable :: CaCO3_form_zint(:)
     integer(int_kind), allocatable :: CaCO3_form_zint_100m(:)
+    integer(int_kind), allocatable :: Nfix_zint(:)
     integer(int_kind), allocatable :: auto_graze_zint(:)
     integer(int_kind), allocatable :: auto_graze_zint_100m(:)
     integer(int_kind), allocatable :: auto_graze_poc_zint(:)
@@ -601,6 +602,7 @@ module marbl_interface_private_types
     integer(int_kind), allocatable :: auto_agg_zint_100m(:)
     integer(int_kind) :: tot_CaCO3_form_zint
     integer(int_kind) :: tot_CaCO3_form_zint_100m
+    integer(int_kind) :: tot_Nfix_zint
 
     ! Zooplankton 2D diags
     integer(int_kind), allocatable :: zoo_loss_zint(:)
@@ -2025,6 +2027,7 @@ contains
         deallocate(this%photoC_NO3_zint)
         deallocate(this%CaCO3_form_zint)
         deallocate(this%CaCO3_form_zint_100m)
+        deallocate(this%Nfix_zint)
         deallocate(this%auto_graze_zint)
         deallocate(this%auto_graze_zint_100m)
         deallocate(this%auto_graze_poc_zint)

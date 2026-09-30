@@ -892,6 +892,7 @@ contains
           allocate(ind%photoC_NO3_zint(autotroph_cnt))
           allocate(ind%CaCO3_form_zint(autotroph_cnt))
           allocate(ind%CaCO3_form_zint_100m(autotroph_cnt))
+          allocate(ind%Nfix_zint(autotroph_cnt))
           allocate(ind%auto_graze_zint(autotroph_cnt))
           allocate(ind%auto_graze_zint_100m(autotroph_cnt))
           allocate(ind%auto_graze_poc_zint(autotroph_cnt))
@@ -1129,6 +1130,22 @@ contains
             ind%CaCO3_form_zint_100m(n) = -1
           end if
 
+          if (autotroph_settings(n)%Nfixer) then
+            lname = trim(autotroph_settings(n)%lname) // ' N Fixation Vertical Integral'
+            sname = trim(autotroph_settings(n)%sname) // '_Nfix_zint'
+            units = unit_system%conc_flux_units
+            vgrid = 'none'
+            truncate = .false.
+            call diags%add_diagnostic(lname, sname, units, vgrid, truncate, &
+                ind%Nfix_zint(n), marbl_status_log)
+            if (marbl_status_log%labort_marbl) then
+              call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+              return
+            end if
+          else
+            ind%Nfix_zint(n) = -1
+          end if
+
           lname = trim(autotroph_settings(n)%lname) // ' Grazing Vertical Integral'
           sname = 'graze_' // trim(autotroph_settings(n)%sname) // '_zint'
           units = unit_system%conc_flux_units
@@ -1347,6 +1364,18 @@ contains
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
             ind%tot_CaCO3_form_zint_100m, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'Total N Fixation Vertical Integral'
+        sname = 'Nfix_zint'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%tot_Nfix_zint, marbl_status_log)
         if (marbl_status_log%labort_marbl) then
           call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
           return
@@ -3745,6 +3774,7 @@ contains
     diags(ind%photoC_NO3_TOT)%field_3d(:, 1) = c0
     diags(ind%tot_CaCO3_form_zint)%field_2d(1) = c0
     diags(ind%tot_CaCO3_form_zint_100m)%field_2d(1) = c0
+    diags(ind%tot_Nfix_zint)%field_2d(1) = c0
     diags(ind%photoC_TOT_zint)%field_2d(1) = c0
     diags(ind%photoC_TOT_zint_100m)%field_2d(1) = c0
     diags(ind%photoC_NO3_TOT_zint)%field_2d(1) = c0
@@ -3829,8 +3859,14 @@ contains
 
        if (ind%Nfix(n).ne.-1) then
           diags(ind%Nfix(n))%field_3d(:, 1)  = autotroph_derived_terms%Nfix(n,:)
+          call marbl_diagnostics_share_compute_vertical_integrals( &
+               autotroph_derived_terms%Nfix(n,:), delta_z, kmt, unit_system, &
+               full_depth_integral=diags(ind%Nfix_zint(n))%field_2d(1))
+
           diags(ind%tot_Nfix)%field_3d(:, 1) = diags(ind%tot_Nfix)%field_3d(:, 1) + &
                diags(ind%Nfix(n))%field_3d(:, 1)
+          diags(ind%tot_Nfix_zint)%field_2d(1) = diags(ind%tot_Nfix_zint)%field_2d(1) + &
+               diags(ind%Nfix_zint(n))%field_2d(1)
        end if
 
        diags(ind%auto_graze(n))%field_3d(:, 1)     = autotroph_derived_terms%auto_graze(n,:)
