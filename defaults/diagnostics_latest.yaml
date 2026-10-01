@@ -634,6 +634,13 @@ photoC_NO3_TOT_zint_100m :
    frequency : medium
    operator : average
    diag_mode : full
+photoFe_TOT_zint :
+   longname : Total Fe Uptake Vertical Integral
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
 DOC_prod_zint :
    dependencies :
       base_bio_on : .true.
@@ -1123,6 +1130,15 @@ photoC_NO3_TOT :
    dependencies :
       base_bio_on : .true.
    longname : Total C Fixation from NO3
+   units : mmol/m^3/s
+   vertical_grid : layer_avg
+   frequency : medium
+   operator : average
+   diag_mode : full
+photoFe_TOT :
+   dependencies :
+      base_bio_on : .true.
+   longname : Total Fe Uptake
    units : mmol/m^3/s
    vertical_grid : layer_avg
    frequency : medium
@@ -2249,6 +2265,13 @@ photoC_NO3_((autotroph_sname))_zint :
    units : mmol/m^3 cm/s
    vertical_grid : none
    frequency : never
+   operator : average
+   diag_mode : full
+photoFe_((autotroph_sname))_zint :
+   longname : ((autotroph_lname)) Fe Uptake Vertical Integral
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
    operator : average
    diag_mode : full
 graze_((autotroph_sname))_zint :

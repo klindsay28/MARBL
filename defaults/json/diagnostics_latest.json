@@ -3330,6 +3330,33 @@
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
    },
+   "photoFe_((autotroph_sname))_zint": {
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "((autotroph_lname)) Fe Uptake Vertical Integral",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
+   },
+   "photoFe_TOT": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "Total Fe Uptake",
+      "operator": "average",
+      "units": "mmol/m^3/s",
+      "vertical_grid": "layer_avg"
+   },
+   "photoFe_TOT_zint": {
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "Total Fe Uptake Vertical Integral",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
+   },
    "photoNH4_((autotroph_sname))": {
       "diag_mode": "full",
       "frequency": "medium",

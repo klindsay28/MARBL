@@ -572,6 +572,18 @@ contains
           return
         end if
 
+        lname = 'Total Fe Uptake Vertical Integral'
+        sname = 'photoFe_TOT_zint'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%photoFe_TOT_zint, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
         lname = 'Vertical Integral of DOC Production'
         sname = 'DOC_prod_zint'
         units = unit_system%conc_flux_units
@@ -938,6 +950,7 @@ contains
           allocate(ind%photoC_zint(autotroph_cnt))
           allocate(ind%photoC_zint_100m(autotroph_cnt))
           allocate(ind%photoC_NO3_zint(autotroph_cnt))
+          allocate(ind%photoFe_zint(autotroph_cnt))
           allocate(ind%CaCO3_form_zint(autotroph_cnt))
           allocate(ind%CaCO3_form_zint_100m(autotroph_cnt))
           allocate(ind%Nfix_zint(autotroph_cnt))
@@ -1141,6 +1154,18 @@ contains
           truncate = .false.
           call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
               ind%photoC_NO3_zint(n), marbl_status_log)
+          if (marbl_status_log%labort_marbl) then
+            call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+            return
+          end if
+
+          lname = trim(autotroph_settings(n)%lname) // ' Fe Uptake Vertical Integral'
+          sname = 'photoFe_' // trim(autotroph_settings(n)%sname) // '_zint'
+          units = unit_system%conc_flux_units
+          vgrid = 'none'
+          truncate = .false.
+          call diags%add_diagnostic(lname, sname, units, vgrid, truncate,  &
+              ind%photoFe_zint(n), marbl_status_log)
           if (marbl_status_log%labort_marbl) then
             call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
             return
@@ -1937,6 +1962,18 @@ contains
         truncate = .not. lecovars_full_depth_tavg
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
             ind%photoC_NO3_TOT, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'Total Fe Uptake'
+        sname = 'photoFe_TOT'
+        units = unit_system%conc_tend_units
+        vgrid = 'layer_avg'
+        truncate = .not. lecovars_full_depth_tavg
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%photoFe_TOT, marbl_status_log)
         if (marbl_status_log%labort_marbl) then
           call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
           return
@@ -3844,12 +3881,14 @@ contains
     diags(ind%auto_graze_TOT)%field_3d(:, 1) = c0
     diags(ind%photoC_TOT)%field_3d(:, 1) = c0
     diags(ind%photoC_NO3_TOT)%field_3d(:, 1) = c0
+    diags(ind%photoFe_TOT)%field_3d(:, 1) = c0
     diags(ind%tot_CaCO3_form_zint)%field_2d(1) = c0
     diags(ind%tot_CaCO3_form_zint_100m)%field_2d(1) = c0
     diags(ind%tot_Nfix_zint)%field_2d(1) = c0
     diags(ind%photoC_TOT_zint)%field_2d(1) = c0
     diags(ind%photoC_TOT_zint_100m)%field_2d(1) = c0
     diags(ind%photoC_NO3_TOT_zint)%field_2d(1) = c0
+    diags(ind%photoFe_TOT_zint)%field_2d(1) = c0
 
     do n = 1, autotroph_cnt
        ! compute biomass weighted average of limitation terms over 0..100m
@@ -3916,6 +3955,14 @@ contains
        diags(ind%PO4_uptake(n))%field_3d(:, 1)  = autotroph_derived_terms%PO4_V(n,:)
        diags(ind%DOP_uptake(n))%field_3d(:, 1)  = autotroph_derived_terms%DOP_V(n,:)
        diags(ind%photoFE(n))%field_3d(:, 1)     = autotroph_derived_terms%photoFe(n,:)
+       diags(ind%photoFe_TOT)%field_3d(:, 1)    = diags(ind%photoFe_TOT)%field_3d(:, 1) + &
+            autotroph_derived_terms%photoFe(n,:)
+
+       call marbl_diagnostics_share_compute_vertical_integrals(autotroph_derived_terms%photoFe(n,:), &
+            delta_z, kmt, unit_system, full_depth_integral=diags(ind%photoFe_zint(n))%field_2d(1))
+
+       diags(ind%photoFe_TOT_zint)%field_2d(1) = diags(ind%photoFe_TOT_zint)%field_2d(1) + &
+            diags(ind%photoFe_zint(n))%field_2d(1)
 
        if (ind%bSi_form(n).ne.-1) then
           diags(ind%bSi_form(n))%field_3d(:, 1)  = autotroph_derived_terms%photoSi(n,:)
