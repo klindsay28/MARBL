@@ -919,6 +919,15 @@ pfeToSed :
    frequency : medium
    operator : average
    diag_mode : minimal
+bSi_form_zint :
+   dependencies :
+      base_bio_on : .true.
+   longname : Total Si Uptake Vertical Integral
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
 CaCO3_form_zint :
    dependencies :
       base_bio_on : .true.
@@ -2384,6 +2393,15 @@ graze_((autotroph_sname))_((zooplankton_sname))_zint_100m :
    units : mmol/m^3 cm/s
    vertical_grid : none
    frequency : medium
+   operator : average
+   diag_mode : full
+((autotroph_sname))_bSi_form_zint :
+   dependencies :
+      ((autotroph_silicifier)) : true
+   longname : ((autotroph_lname)) Si Uptake Vertical Integral
+   units : mmol/m^3 cm/s
+   vertical_grid : none
+   frequency : never
    operator : average
    diag_mode : full
 ((autotroph_sname))_CaCO3_form_zint :

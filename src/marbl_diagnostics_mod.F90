@@ -951,6 +951,7 @@ contains
           allocate(ind%photoC_zint_100m(autotroph_cnt))
           allocate(ind%photoC_NO3_zint(autotroph_cnt))
           allocate(ind%photoFe_zint(autotroph_cnt))
+          allocate(ind%bSi_form_zint(autotroph_cnt))
           allocate(ind%CaCO3_form_zint(autotroph_cnt))
           allocate(ind%CaCO3_form_zint_100m(autotroph_cnt))
           allocate(ind%Nfix_zint(autotroph_cnt))
@@ -1169,6 +1170,22 @@ contains
           if (marbl_status_log%labort_marbl) then
             call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
             return
+          end if
+
+          if (autotroph_settings(n)%silicifier) then
+            lname = trim(autotroph_settings(n)%lname) // ' Si Uptake Vertical Integral'
+            sname = trim(autotroph_settings(n)%sname) // '_bSi_form_zint'
+            units = unit_system%conc_flux_units
+            vgrid = 'none'
+            truncate = .false.
+            call diags%add_diagnostic(lname, sname, units, vgrid, truncate, &
+                ind%bSi_form_zint(n), marbl_status_log)
+            if (marbl_status_log%labort_marbl) then
+              call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+              return
+            end if
+          else
+            ind%bSi_form_zint(n) = -1
           end if
 
           if (autotroph_settings(n)%imp_calcifier .or. autotroph_settings(n)%exp_calcifier) then
@@ -1417,6 +1434,18 @@ contains
             return
           end if
         end do
+
+        lname = 'Total Si Uptake Vertical Integral'
+        sname = 'bSi_form_zint'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%tot_bSi_form_zint, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
 
         lname = 'Total CaCO3 Formation Vertical Integral'
         sname = 'CaCO3_form_zint'
@@ -3882,6 +3911,7 @@ contains
     diags(ind%photoC_TOT)%field_3d(:, 1) = c0
     diags(ind%photoC_NO3_TOT)%field_3d(:, 1) = c0
     diags(ind%photoFe_TOT)%field_3d(:, 1) = c0
+    diags(ind%tot_bSi_form_zint)%field_2d(1) = c0
     diags(ind%tot_CaCO3_form_zint)%field_2d(1) = c0
     diags(ind%tot_CaCO3_form_zint_100m)%field_2d(1) = c0
     diags(ind%tot_Nfix_zint)%field_2d(1) = c0
@@ -4017,6 +4047,14 @@ contains
        end where
 
        ! per-autotroph vertical integrals and their sums
+       if (ind%bSi_form_zint(n).ne.-1) then
+          call marbl_diagnostics_share_compute_vertical_integrals(autotroph_derived_terms%photoSi(n,:), &
+               delta_z, kmt, unit_system, full_depth_integral=diags(ind%bSi_form_zint(n))%field_2d(1))
+
+          diags(ind%tot_bSi_form_zint)%field_2d(1) = diags(ind%tot_bSi_form_zint)%field_2d(1) + &
+               diags(ind%bSi_form_zint(n))%field_2d(1)
+       end if
+
        if (ind%CaCO3_form_zint(n).ne.-1) then
           call marbl_diagnostics_share_compute_vertical_integrals(autotroph_derived_terms%CaCO3_form(n,:), &
                delta_z, kmt, unit_system, full_depth_integral=diags(ind%CaCO3_form_zint(n))%field_2d(1), &

@@ -587,6 +587,7 @@ module marbl_interface_private_types
     integer(int_kind), allocatable :: photoC_zint_100m(:)
     integer(int_kind), allocatable :: photoC_NO3_zint(:)
     integer(int_kind), allocatable :: photoFe_zint(:)
+    integer(int_kind), allocatable :: bSi_form_zint(:)
     integer(int_kind), allocatable :: CaCO3_form_zint(:)
     integer(int_kind), allocatable :: CaCO3_form_zint_100m(:)
     integer(int_kind), allocatable :: Nfix_zint(:)
@@ -606,6 +607,7 @@ module marbl_interface_private_types
     integer(int_kind), allocatable :: auto_loss_doc_zint_100m(:)
     integer(int_kind), allocatable :: auto_agg_zint(:)
     integer(int_kind), allocatable :: auto_agg_zint_100m(:)
+    integer(int_kind) :: tot_bSi_form_zint
     integer(int_kind) :: tot_CaCO3_form_zint
     integer(int_kind) :: tot_CaCO3_form_zint_100m
     integer(int_kind) :: tot_Nfix_zint
@@ -2035,6 +2037,7 @@ contains
         deallocate(this%photoC_zint_100m)
         deallocate(this%photoC_NO3_zint)
         deallocate(this%photoFe_zint)
+        deallocate(this%bSi_form_zint)
         deallocate(this%CaCO3_form_zint)
         deallocate(this%CaCO3_form_zint_100m)
         deallocate(this%Nfix_zint)

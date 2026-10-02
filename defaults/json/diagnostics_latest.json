@@ -215,6 +215,17 @@
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
    },
+   "((autotroph_sname))_bSi_form_zint": {
+      "dependencies": {
+         "((autotroph_silicifier))": true
+      },
+      "diag_mode": "full",
+      "frequency": "never",
+      "longname": "((autotroph_lname)) Si Uptake Vertical Integral",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
+   },
    "((autotroph_sname))_light_lim_Cweight_avg_100m": {
       "diag_mode": "minimal",
       "frequency": "medium",
@@ -2748,6 +2759,17 @@
       "operator": "average",
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
+   },
+   "bSi_form_zint": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "Total Si Uptake Vertical Integral",
+      "operator": "average",
+      "units": "mmol/m^3 cm/s",
+      "vertical_grid": "none"
    },
    "bsiToSed": {
       "dependencies": {
