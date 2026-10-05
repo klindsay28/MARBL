@@ -849,6 +849,18 @@ contains
           return
         end if
 
+        lname = 'nitrogen Flux Hitting Sea Floor'
+        sname = 'ponToFloor'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%ponToFloor, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
         lname = 'nitrogen burial Flux to Sediments'
         sname = 'ponToSed'
         units = unit_system%conc_flux_units
@@ -885,6 +897,18 @@ contains
           return
         end if
 
+        lname = 'phosphorus Flux Hitting Sea Floor'
+        sname = 'popToFloor'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%popToFloor, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
         lname = 'phosphorus Flux to Sediments'
         sname = 'popToSed'
         units = unit_system%conc_flux_units
@@ -892,6 +916,18 @@ contains
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
             ind%popToSed, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'biogenic Si Flux Hitting Sea Floor'
+        sname = 'bSiToFloor'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%bSiToFloor, marbl_status_log)
         if (marbl_status_log%labort_marbl) then
           call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
           return
@@ -916,6 +952,18 @@ contains
         truncate = .false.
         call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
             ind%dustToSed, marbl_status_log)
+        if (marbl_status_log%labort_marbl) then
+          call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
+          return
+        end if
+
+        lname = 'pfe Flux Hitting Sea Floor'
+        sname = 'pfeToFloor'
+        units = unit_system%conc_flux_units
+        vgrid = 'none'
+        truncate = .false.
+        call diags%add_diagnostic(lname, sname, units, vgrid, truncate,     &
+            ind%pfeToFloor, marbl_status_log)
         if (marbl_status_log%labort_marbl) then
           call marbl_logging_add_diagnostics_error(marbl_status_log, sname, subname)
           return
@@ -4213,6 +4261,7 @@ contains
     call marbl_diagnostics_share_compute_vertical_integrals(diags(ind%POP_REMIN_DOPr)%field_3d(:, 1), &
          delta_z, kmt, unit_system, full_depth_integral=diags(ind%POP_REMIN_DOPr_zint)%field_2d(1))
     diags(ind%POP_REMIN_PO4)%field_3d(:, 1)      = POP%remin * (c1 - POPremin_refract)
+    diags(ind%popToFloor)%field_2d(1)            = POP%to_floor
     diags(ind%popToSed)%field_2d(1)              = sed_loss
 
     ! PON and other nitrogen diagnostics
@@ -4225,6 +4274,7 @@ contains
     call marbl_diagnostics_share_compute_vertical_integrals(diags(ind%PON_REMIN_DONr)%field_3d(:, 1), &
          delta_z, kmt, unit_system, full_depth_integral=diags(ind%PON_REMIN_DONr_zint)%field_2d(1))
     diags(ind%PON_REMIN_NH4)%field_3d(:, 1)      = PON%remin * (c1 - PONremin_refract)
+    diags(ind%ponToFloor)%field_2d(1)            = PON%to_floor
     diags(ind%ponToSed)%field_2d(1)              = sed_loss
     diags(ind%SedDenitrif)%field_2d(1)           = sum(sed_denitrif * delta_z)
 
@@ -4262,6 +4312,7 @@ contains
     diags(ind%SiO2_FLUX_IN)%field_3d(kmt+1, 1)    = sed_loss
     diags(ind%SiO2_PROD)%field_3d(:, 1)           = P_SiO2%prod
     diags(ind%SiO2_REMIN)%field_3d(:, 1)          = P_SiO2%remin
+    diags(ind%bsiToFloor)%field_2d(1)             = P_SiO2%to_floor
     diags(ind%bsiToSed)%field_2d(1)               = sed_loss
 
     ! dust diagnostics
@@ -4275,9 +4326,10 @@ contains
     sed_loss = sum(P_iron%sed_loss)
     diags(ind%P_iron_FLUX_at_ref_depth)%field_2d(1) = P_iron%flux_at_ref_depth
     diags(ind%P_iron_FLUX_IN)%field_3d(1:kmt, 1)    = P_iron%sflux_in(1:kmt) + P_iron%hflux_in(1:kmt)
-    diags(ind%P_iron_FLUX_IN)%field_3d(kmt+1, 1)        = sed_loss
+    diags(ind%P_iron_FLUX_IN)%field_3d(kmt+1, 1)    = sed_loss
     diags(ind%P_iron_PROD)%field_3d(:, 1)           = P_iron%prod
     diags(ind%P_iron_REMIN)%field_3d(:, 1)          = P_iron%remin
+    diags(ind%pfeToFloor)%field_2d(1)               = P_iron%to_floor
     diags(ind%pfeToSed)%field_2d(1)                 = sed_loss
 
     diags(ind%OtherRemin)%field_2d(1)        = sum(other_remin * delta_z)

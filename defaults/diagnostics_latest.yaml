@@ -856,6 +856,15 @@ pocToSed :
    frequency : medium
    operator : average
    diag_mode : minimal
+ponToFloor :
+   dependencies :
+      base_bio_on : .true.
+   longname : nitrogen Flux Hitting Sea Floor
+   units : nmol/cm^2/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
 ponToSed :
    dependencies :
       base_bio_on : .true.
@@ -883,6 +892,15 @@ OtherRemin :
    frequency : never
    operator : average
    diag_mode : full
+popToFloor :
+   dependencies :
+      base_bio_on : .true.
+   longname : phosphorus Flux Hitting Sea Floor
+   units : nmol/cm^2/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : full
 popToSed :
    dependencies :
       base_bio_on : .true.
@@ -892,6 +910,15 @@ popToSed :
    frequency : medium
    operator : average
    diag_mode : full
+bSiToFloor :
+   dependencies :
+      base_bio_on : .true.
+   longname : biogenic Si Flux Hitting Sea Floor
+   units : nmol/cm^2/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : minimal
 bsiToSed :
    dependencies :
       base_bio_on : .true.
@@ -906,6 +933,15 @@ dustToSed :
       base_bio_on : .true.
    longname : dust Flux to Sediments
    units : g/cm^2/s
+   vertical_grid : none
+   frequency : medium
+   operator : average
+   diag_mode : minimal
+pfeToFloor :
+   dependencies :
+      base_bio_on : .true.
+   longname : pfe Flux Hitting Sea Floor
+   units : nmol/cm^2/s
    vertical_grid : none
    frequency : medium
    operator : average

@@ -2749,6 +2749,17 @@
       "units": "mmol/m^3/s",
       "vertical_grid": "layer_avg"
    },
+   "bSiToFloor": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "minimal",
+      "frequency": "medium",
+      "longname": "biogenic Si Flux Hitting Sea Floor",
+      "operator": "average",
+      "units": "nmol/cm^2/s",
+      "vertical_grid": "none"
+   },
    "bSi_form": {
       "dependencies": {
          "base_bio_on": ".true."
@@ -3215,6 +3226,17 @@
       "units": 1,
       "vertical_grid": "layer_avg"
    },
+   "pfeToFloor": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "minimal",
+      "frequency": "medium",
+      "longname": "pfe Flux Hitting Sea Floor",
+      "operator": "average",
+      "units": "nmol/cm^2/s",
+      "vertical_grid": "none"
+   },
    "pfeToSed": {
       "dependencies": {
          "base_bio_on": ".true."
@@ -3450,6 +3472,17 @@
       "units": "nmol/cm^2/s",
       "vertical_grid": "none"
    },
+   "ponToFloor": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "nitrogen Flux Hitting Sea Floor",
+      "operator": "average",
+      "units": "nmol/cm^2/s",
+      "vertical_grid": "none"
+   },
    "ponToSed": {
       "dependencies": {
          "base_bio_on": ".true."
@@ -3457,6 +3490,17 @@
       "diag_mode": "full",
       "frequency": "medium",
       "longname": "nitrogen burial Flux to Sediments",
+      "operator": "average",
+      "units": "nmol/cm^2/s",
+      "vertical_grid": "none"
+   },
+   "popToFloor": {
+      "dependencies": {
+         "base_bio_on": ".true."
+      },
+      "diag_mode": "full",
+      "frequency": "medium",
+      "longname": "phosphorus Flux Hitting Sea Floor",
       "operator": "average",
       "units": "nmol/cm^2/s",
       "vertical_grid": "none"

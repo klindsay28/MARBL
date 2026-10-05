@@ -562,12 +562,16 @@ module marbl_interface_private_types
     integer(int_kind) :: calcToSed_ALT_CO2
     integer(int_kind) :: pocToFloor
     integer(int_kind) :: pocToSed
+    integer(int_kind) :: ponToFloor
     integer(int_kind) :: ponToSed
     integer(int_kind) :: SedDenitrif
     integer(int_kind) :: OtherRemin
+    integer(int_kind) :: popToFloor
     integer(int_kind) :: popToSed
+    integer(int_kind) :: bSiToFloor
     integer(int_kind) :: bsiToSed
     integer(int_kind) :: dustToSed
+    integer(int_kind) :: pfeToFloor
     integer(int_kind) :: pfeToSed
 
     ! Autotroph 2D diags
